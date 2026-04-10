@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Fitness Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f7fa;
+    --surface: #ffffff;
+    --surface2: #f0f4ff;
+    --accent: #0ea5e9;
+    --accent2: #6366f1;
+    --accent3: #10b981;
+    --accent4: #f59e0b;
+    --text: #0f172a;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --shadow: 0 4px 24px rgba(15,23,42,0.08);
+    --shadow-sm: 0 2px 8px rgba(15,23,42,0.06);
+    --radius: 18px;
+    --radius-sm: 10px;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .header-icon {
+    width: 38px; height: 38px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  .header-title {
+    font-family: 'Clash Display', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+
+  .header-sub {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 400;
+    margin-top: 1px;
+  }
+
+  .start-btn {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white;
+    border: none;
+    padding: 10px 22px;
+    border-radius: 50px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 4px 14px rgba(14,165,233,0.35);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  .start-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(14,165,233,0.45); }
+  .start-btn:active { transform: scale(0.97); }
+
+  .start-btn.stop-state {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    box-shadow: 0 4px 14px rgba(239,68,68,0.35);
+  }
+  .start-btn.stop-state:hover { box-shadow: 0 6px 20px rgba(239,68,68,0.5); }
+
+  .stop-icon {
+    width: 9px; height: 9px;
+    background: #fff;
+    border-radius: 2px;
+  }
+
+  .pulse-dot {
+    width: 8px; height: 8px;
+    background: #fff;
+    border-radius: 50%;
+    animation: pulse 1.5s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.3); }
+  }
+
+  /* MAIN */
+  .main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px 16px 48px;
+  }
+
+  /* THRESHOLD CARD */
+  .threshold-card {
+    background: linear-gradient(135deg, #e0f2fe 0%, #ede9fe 100%);
+    border: 1px solid #bae6fd;
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .threshold-icon { font-size: 28px; }
+
+  .threshold-info { flex: 1; min-width: 140px; }
+  .threshold-label {
+    font-family: 'Clash Display', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent2);
+    margin-bottom: 2px;
+  }
+  .threshold-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+    font-family: 'Clash Display', sans-serif;
+  }
+
+  .threshold-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .threshold-input {
+    padding: 10px 14px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    width: 110px;
+    background: white;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .threshold-input:focus { border-color: var(--accent); }
+
+  .apply-btn {
+    padding: 10px 18px;
+    background: var(--accent2);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+  }
+
+  .apply-btn:hover { background: #4f46e5; transform: translateY(-1px); }
+
+  /* SECTION TITLE */
+  .section-title {
+    font-family: 'Clash Display', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin: 28px 0 14px;
+  }
+
+  /* STATS GRID */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 3px 3px 0 0;
+  }
+
+  .stat-card.c1::before { background: linear-gradient(90deg, var(--accent), #38bdf8); }
+  .stat-card.c2::before { background: linear-gradient(90deg, var(--accent2), #818cf8); }
+  .stat-card.c3::before { background: linear-gradient(90deg, var(--accent3), #34d399); }
+  .stat-card.c4::before { background: linear-gradient(90deg, var(--accent4), #fbbf24); }
+  .stat-card.c5::before { background: linear-gradient(90deg, #ec4899, #f43f5e); }
+  .stat-card.c6::before { background: linear-gradient(90deg, #8b5cf6, #a855f7); }
+  .stat-card.c7::before { background: linear-gradient(90deg, #14b8a6, #06b6d4); }
+  .stat-card.c8::before { background: linear-gradient(90deg, #f97316, #fb923c); }
+  .stat-card.c9::before { background: linear-gradient(90deg, #64748b, #94a3b8); }
+
+  .stat-emoji { font-size: 22px; }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 500;
+    letter-spacing: 0.3px;
+  }
+
+  .stat-value {
+    font-family: 'Clash Display', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.1;
+  }
+
+  /* LIVE VALUES (acc + speed) */
+  .live-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .live-card {
+    background: var(--text);
+    border-radius: var(--radius);
+    padding: 20px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .live-card::after {
+    content: '';
+    position: absolute;
+    right: -20px; bottom: -20px;
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    opacity: 0.08;
+    background: white;
+  }
+
+  .live-card-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 8px;
+  }
+
+  .live-card-value {
+    font-family: 'Clash Display', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  /* CHARTS */
+  .charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.2s;
+  }
+
+  .chart-card:hover { box-shadow: var(--shadow); }
+
+  .chart-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .chart-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+  }
+
+  .chart-title {
+    font-family: 'Clash Display', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.1px;
+  }
+
+  canvas {
+    border-radius: var(--radius-sm);
+    width: 100% !important;
+    max-height: 190px;
+  }
+
+  /* =============================================
+     THREE-DOT MENU BUTTON — NEW ADDITION
+     ============================================= */
+  .three-dot-btn {
+    width: 38px;
+    height: 38px;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s, border-color 0.2s;
+    flex-shrink: 0;
+  }
+
+  .three-dot-btn:hover {
+    background: #e8eeff;
+    border-color: var(--accent2);
+    transform: scale(1.05);
+  }
+
+  .three-dot-btn:active { transform: scale(0.95); }
+
+  .three-dot-btn span {
+    width: 4px;
+    height: 4px;
+    background: var(--accent2);
+    border-radius: 50%;
+    display: block;
+    transition: background 0.2s;
+  }
+
+  .three-dot-btn.open span { background: var(--accent); }
+
+  /* =============================================
+     SIDEBAR OVERLAY
+     ============================================= */
+  .sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.35);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    z-index: 998;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+
+  .sidebar-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* =============================================
+     SIDEBAR PANEL
+     ============================================= */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 290px;
+    background: var(--surface);
+    z-index: 999;
+    box-shadow: 4px 0 40px rgba(15, 23, 42, 0.15);
+    transform: translateX(-100%);
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* Sidebar accent stripe */
+  .sidebar::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--accent), var(--accent2), var(--accent3));
+  }
+
+  .sidebar-header {
+    padding: 22px 22px 18px 26px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .sidebar-header-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .sidebar-logo {
+    width: 34px; height: 34px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+
+  .sidebar-title {
+    font-family: 'Clash Display', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.2px;
+  }
+
+  .sidebar-subtitle {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+
+  .sidebar-close {
+    width: 30px; height: 30px;
+    background: #f1f5f9;
+    border: none;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 15px;
+    color: var(--muted);
+    transition: background 0.2s, color 0.2s, transform 0.15s;
+    line-height: 1;
+  }
+
+  .sidebar-close:hover { background: #fee2e2; color: #ef4444; transform: rotate(90deg); }
+
+  .sidebar-section-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    padding: 18px 26px 8px;
+  }
+
+  .sidebar-nav {
+    flex: 1;
+    padding: 4px 14px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow-y: auto;
+  }
+
+  .sidebar-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 13px 16px;
+    border-radius: 13px;
+    text-decoration: none;
+    color: var(--text);
+    transition: background 0.2s, transform 0.15s;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .sidebar-nav-item::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 13px;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .sidebar-nav-item:nth-child(1)::before { background: linear-gradient(135deg, #eff6ff, #e0f2fe); }
+  .sidebar-nav-item:nth-child(2)::before { background: linear-gradient(135deg, #fdf4ff, #ede9fe); }
+  .sidebar-nav-item:nth-child(3)::before { background: linear-gradient(135deg, #f0fdf4, #dcfce7); }
+
+  .sidebar-nav-item:hover::before { opacity: 1; }
+  .sidebar-nav-item:hover { transform: translateX(4px); }
+  .sidebar-nav-item:hover .nav-item-border { opacity: 1; }
+
+  .sidebar-nav-item:active { transform: scale(0.98) translateX(2px); }
+
+  .nav-item-border {
+    position: absolute;
+    left: 0; top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 60%;
+    border-radius: 0 3px 3px 0;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .sidebar-nav-item:nth-child(1) .nav-item-border { background: var(--accent); }
+  .sidebar-nav-item:nth-child(2) .nav-item-border { background: var(--accent2); }
+  .sidebar-nav-item:nth-child(3) .nav-item-border { background: var(--accent3); }
+
+  .nav-icon-wrap {
+    width: 40px; height: 40px;
+    border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+    transition: transform 0.2s;
+  }
+
+  .sidebar-nav-item:hover .nav-icon-wrap { transform: scale(1.1); }
+
+  .sidebar-nav-item:nth-child(1) .nav-icon-wrap { background: linear-gradient(135deg, #dbeafe, #bae6fd); }
+  .sidebar-nav-item:nth-child(2) .nav-icon-wrap { background: linear-gradient(135deg, #ede9fe, #ddd6fe); }
+  .sidebar-nav-item:nth-child(3) .nav-icon-wrap { background: linear-gradient(135deg, #dcfce7, #bbf7d0); }
+
+  .nav-text { position: relative; z-index: 1; }
+
+  .nav-text-title {
+    font-family: 'Clash Display', sans-serif;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.2;
+  }
+
+  .nav-text-sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .nav-arrow {
+    margin-left: auto;
+    font-size: 14px;
+    color: var(--muted);
+    position: relative;
+    z-index: 1;
+    transition: transform 0.2s, color 0.2s;
+    opacity: 0.6;
+  }
+
+  .sidebar-nav-item:hover .nav-arrow {
+    transform: translateX(3px);
+    opacity: 1;
+  }
+
+  .sidebar-footer {
+    padding: 16px 22px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  /* Stagger animation for nav items */
+  .sidebar-nav-item {
+    opacity: 0;
+    transform: translateX(-16px);
+    transition: opacity 0.3s ease, transform 0.3s ease, background 0.2s, border-color 0.2s;
+  }
+
+  .sidebar.open .sidebar-nav-item:nth-child(1) { opacity: 1; transform: translateX(0); transition-delay: 0.12s; }
+  .sidebar.open .sidebar-nav-item:nth-child(2) { opacity: 1; transform: translateX(0); transition-delay: 0.18s; }
+  .sidebar.open .sidebar-nav-item:nth-child(3) { opacity: 1; transform: translateX(0); transition-delay: 0.24s; }
+
+  /* RESPONSIVE */
+  @media (max-width: 600px) {
+    .header { padding: 14px 16px; }
+    .header-title { font-size: 17px; }
+    .start-btn { padding: 9px 16px; font-size: 13px; }
+    .main { padding: 16px 12px 40px; }
+    .live-row { grid-template-columns: 1fr; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .charts-grid { grid-template-columns: 1fr; }
+    .threshold-card { gap: 12px; }
+    .live-card-value { font-size: 22px; }
+    .sidebar { width: 270px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- =============================================
+     SIDEBAR OVERLAY
+     ============================================= -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- =============================================
+     SIDEBAR PANEL
+     ============================================= -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-header-brand">
+      <div class="sidebar-logo">🏃</div>
+      <div>
+        <div class="sidebar-title">FitTrack</div>
+        <div class="sidebar-subtitle">Navigation Menu</div>
+      </div>
+    </div>
+    <button class="sidebar-close" onclick="closeSidebar()">✕</button>
+  </div>
+
+  <div class="sidebar-section-label">AI Detection Tools</div>
+
+  <nav class="sidebar-nav">
+    <a class="sidebar-nav-item" href="standingfalldetection.html">
+      <div class="nav-item-border"></div>
+      <div class="nav-icon-wrap">🧍</div>
+      <div class="nav-text">
+        <div class="nav-text-title">Standing Fall Detection</div>
+        <div class="nav-text-sub">Motion-based analysis</div>
+      </div>
+      <span class="nav-arrow">›</span>
+    </a>
+
+    <a class="sidebar-nav-item" href="imagefalldetection.html">
+      <div class="nav-item-border"></div>
+      <div class="nav-icon-wrap">📸</div>
+      <div class="nav-text">
+        <div class="nav-text-title">Image Fall Detection</div>
+        <div class="nav-text-sub">Vision-based detection</div>
+      </div>
+      <span class="nav-arrow">›</span>
+    </a>
+
+    <a class="sidebar-nav-item" href="aiwellness.html">
+      <div class="nav-item-border"></div>
+      <div class="nav-icon-wrap">🩺</div>
+      <div class="nav-text">
+        <div class="nav-text-title">Medical Image Recognition</div>
+        <div class="nav-text-sub">AI wellness insights</div>
+      </div>
+      <span class="nav-arrow">›</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">FitTrack · Smart Motion Analytics</div>
+</div>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-left">
+    <!-- THREE-DOT MENU BUTTON -->
+    <button class="three-dot-btn" id="threeDotBtn" onclick="toggleSidebar()" title="Open menu">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <div class="header-brand">
+      <div class="header-icon">🏃</div>
+      <div>
+        <div class="header-title">FitTrack</div>
+        <div class="header-sub">Smart Motion Analytics</div>
+      </div>
+    </div>
+  </div>
+
+  <button class="start-btn" id="startStopBtn" onclick="toggleTracking()">
+    <div class="pulse-dot" id="btnIndicator"></div>
+    <span id="btnLabel">Start</span>
+  </button>
+</header>
+
+<div class="main">
+
+  <!-- THRESHOLD CONTROL -->
+  <div class="threshold-card">
+    <div class="threshold-icon">⚙️</div>
+    <div class="threshold-info">
+      <div class="threshold-label">Step Threshold</div>
+      <div class="threshold-value" id="currentThreshold">1.20</div>
+    </div>
+    <div class="threshold-controls">
+      <input type="number" class="threshold-input" id="thresholdInput" placeholder="e.g. 1.2" step="0.1">
+      <button class="apply-btn" onclick="setThreshold()">Apply</button>
+    </div>
+  </div>
+
+  <!-- LIVE SENSOR VALUES -->
+  <div class="section-title">Live Sensor</div>
+  <div class="live-row">
+    <div class="live-card">
+      <div class="live-card-label">⚡ Filtered Acceleration</div>
+      <div class="live-card-value" id="acc">0.00</div>
+    </div>
+    <div class="live-card" style="background: linear-gradient(135deg,#1e293b,#0f172a);">
+      <div class="live-card-label">💨 Speed (Acc)</div>
+      <div class="live-card-value" id="speedAcc">0.00 m/s</div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="section-title">Metrics</div>
+  <div class="stats-grid">
+    <div class="stat-card c1">
+      <div class="stat-emoji">👣</div>
+      <div class="stat-label">Steps</div>
+      <div class="stat-value" id="steps">0</div>
+    </div>
+    <div class="stat-card c2">
+      <div class="stat-emoji">📏</div>
+      <div class="stat-label">Distance</div>
+      <div class="stat-value" id="distance">0 m</div>
+    </div>
+    <div class="stat-card c3">
+      <div class="stat-emoji">🚶</div>
+      <div class="stat-label">Walk Speed</div>
+      <div class="stat-value" id="speed">0 m/s</div>
+    </div>
+    <div class="stat-card c4">
+      <div class="stat-emoji">🥁</div>
+      <div class="stat-label">Cadence</div>
+      <div class="stat-value" id="cadence">0 <span style="font-size:11px;font-family:'DM Sans';font-weight:400;color:var(--muted)">spm</span></div>
+    </div>
+    <div class="stat-card c5">
+      <div class="stat-emoji">🔥</div>
+      <div class="stat-label">Calories</div>
+      <div class="stat-value" id="calories">0 <span style="font-size:11px;font-family:'DM Sans';font-weight:400;color:var(--muted)">kcal</span></div>
+    </div>
+    <div class="stat-card c6">
+      <div class="stat-emoji">⏱</div>
+      <div class="stat-label">Active Time</div>
+      <div class="stat-value" id="time">0 s</div>
+    </div>
+    <div class="stat-card c7" style="grid-column: span 2;">
+      <div class="stat-emoji">📊</div>
+      <div class="stat-label">Activity Level</div>
+      <div class="stat-value" id="activity">Sedentary</div>
+    </div>
+  </div>
+
+  <!-- CHARTS -->
+  <div class="section-title">Analytics</div>
+  <div class="charts-grid">
+
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-dot" style="background:var(--accent)"></div>
+        <div class="chart-title">Filtered Acceleration</div>
+      </div>
+      <canvas id="accChart"></canvas>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-dot" style="background:var(--accent2)"></div>
+        <div class="chart-title">Speed (m/s)</div>
+      </div>
+      <canvas id="speedAccChart"></canvas>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-dot" style="background:var(--accent3)"></div>
+        <div class="chart-title">Steps</div>
+      </div>
+      <canvas id="stepsChart"></canvas>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-dot" style="background:var(--accent4)"></div>
+        <div class="chart-title">Distance (m)</div>
+      </div>
+      <canvas id="distanceChart"></canvas>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-dot" style="background:#ec4899"></div>
+        <div class="chart-title">Walking Speed</div>
+      </div>
+      <canvas id="speedChart"></canvas>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-dot" style="background:#8b5cf6"></div>
+        <div class="chart-title">Cadence (steps/min)</div>
+      </div>
+      <canvas id="cadenceChart"></canvas>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-dot" style="background:#14b8a6"></div>
+        <div class="chart-title">Calories (kcal)</div>
+      </div>
+      <canvas id="caloriesChart"></canvas>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-dot" style="background:#f97316"></div>
+        <div class="chart-title">Active Time (s)</div>
+      </div>
+      <canvas id="timeChart"></canvas>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-dot" style="background:#64748b"></div>
+        <div class="chart-title">Activity Level</div>
+      </div>
+      <canvas id="activityChart"></canvas>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-dot" style="background:#0ea5e9"></div>
+        <div class="chart-title">Step Threshold</div>
+      </div>
+      <canvas id="thresholdChart"></canvas>
+    </div>
+
+  </div>
+</div>
+
+<!-- ========== SIDEBAR TOGGLE LOGIC — NEW ADDITION ========== -->
+<script>
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const btn     = document.getElementById('threeDotBtn');
+    const isOpen  = sidebar.classList.contains('open');
+    if (isOpen) {
+      closeSidebar();
+    } else {
+      sidebar.classList.add('open');
+      overlay.classList.add('active');
+      btn.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+  }
+
+  function closeSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const btn     = document.getElementById('threeDotBtn');
+    sidebar.classList.remove('open');
+    overlay.classList.remove('active');
+    btn.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  // Close on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeSidebar();
+  });
+</script>
+
+<!-- ========== ORIGINAL LOGIC (UNCHANGED) ========== -->
+<script>
+let filteredAcc = 0;
+let velocity = 0;
+let lastTime = null;
+
+let steps = 0;
+let lastStepTime = 0;
+
+let startTime = null;
+let activeTime = 0;
+
+let STEP_THRESHOLD = 1.2;
+const STEP_DELAY = 400;
+const STEP_LENGTH = 0.75;
+
+let isTracking = false;
+let statsInterval = null;
+let motionHandler = null;
+
+function setThreshold() {
+  let val = parseFloat(document.getElementById("thresholdInput").value);
+  if (!isNaN(val) && val > 0) {
+    STEP_THRESHOLD = val;
+    document.getElementById("currentThreshold").innerText = val.toFixed(2);
+  }
+}
+
+function toggleTracking() {
+  if (!isTracking) {
+    // — START —
+    isTracking = true;
+    startTime = Date.now();
+
+    const btn       = document.getElementById('startStopBtn');
+    const label     = document.getElementById('btnLabel');
+    const indicator = document.getElementById('btnIndicator');
+
+    btn.classList.add('stop-state');
+    label.textContent = 'Stop';
+    indicator.style.borderRadius = '2px'; // square stop icon feel
+    indicator.style.animation = 'none';
+    indicator.style.opacity = '1';
+
+    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === "function") {
+      DeviceMotionEvent.requestPermission().then(res => {
+        if (res === "granted") startMotion();
+      }).catch(err => {
+        console.warn("Motion permission error:", err);
+        startMotion();
+      });
+    } else {
+      startMotion();
+    }
+
+    statsInterval = setInterval(updateStats, 1000);
+
+  } else {
+    // — STOP —
+    isTracking = false;
+
+    const btn       = document.getElementById('startStopBtn');
+    const label     = document.getElementById('btnLabel');
+    const indicator = document.getElementById('btnIndicator');
+
+    btn.classList.remove('stop-state');
+    label.textContent = 'Start';
+    indicator.style.borderRadius = '50%';
+    indicator.style.animation = 'pulse 1.5s infinite';
+
+    if (motionHandler) {
+      window.removeEventListener('devicemotion', motionHandler);
+      motionHandler = null;
+    }
+    if (statsInterval) {
+      clearInterval(statsInterval);
+      statsInterval = null;
+    }
+
+    // Freeze last values visible
+    lastTime = null;
+  }
+}
+
+// kept for compatibility — original start() now routes through toggleTracking
+function start() { toggleTracking(); }
+
+function startMotion() {
+  motionHandler = (event) => {
+    if (!isTracking) return;
+    let now = Date.now();
+
+    if (!lastTime) { lastTime = now; return; }
+
+    let dt = (now - lastTime) / 1000;
+    lastTime = now;
+
+    let x = event.acceleration.x || 0;
+    let y = event.acceleration.y || 0;
+    let z = event.acceleration.z || 0;
+
+    let total = Math.sqrt(x*x + y*y + z*z);
+
+    filteredAcc = 0.8 * filteredAcc + 0.2 * total;
+
+    velocity = velocity + filteredAcc * dt;
+    velocity *= 0.98;
+
+    if (filteredAcc > STEP_THRESHOLD && (now - lastStepTime) > STEP_DELAY) {
+      steps++;
+      lastStepTime = now;
+    }
+
+    document.getElementById("acc").innerText = filteredAcc.toFixed(2);
+    document.getElementById("speedAcc").innerText = velocity.toFixed(2) + " m/s";
+  };
+  window.addEventListener("devicemotion", motionHandler);
+}
+
+let labels = [];
+let dataStore = {
+  acc: [], speedAcc: [], steps: [], distance: [],
+  speed: [], cadence: [], calories: [], time: [], activity: [], threshold: []
+};
+
+const chartColors = {
+  acc:       '#0ea5e9',
+  speedAcc:  '#6366f1',
+  steps:     '#10b981',
+  distance:  '#f59e0b',
+  speed:     '#ec4899',
+  cadence:   '#8b5cf6',
+  calories:  '#14b8a6',
+  time:      '#f97316',
+  activity:  '#64748b',
+  threshold: '#0ea5e9'
+};
+
+function createChart(id, label, color, xLabel, yLabel) {
+  return new Chart(document.getElementById(id), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: label,
+        data: [],
+        borderColor: color,
+        backgroundColor: color + '18',
+        borderWidth: 2,
+        pointRadius: 0,
+        fill: true,
+        tension: 0.4
+      }]
+    },
+    options: {
+      animation: false,
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          align: 'end',
+          labels: {
+            boxWidth: 10,
+            boxHeight: 10,
+            borderRadius: 3,
+            useBorderRadius: true,
+            color: '#475569',
+            font: { size: 11, family: "'DM Sans', sans-serif" },
+            padding: 0
+          }
+        },
+        tooltip: {
+          backgroundColor: '#0f172a',
+          titleColor: '#94a3b8',
+          bodyColor: '#fff',
+          padding: 10,
+          cornerRadius: 8,
+          titleFont: { size: 11 },
+          bodyFont: { size: 13, weight: '600' },
+          displayColors: false
+        }
+      },
+      scales: {
+        x: {
+          ticks: { font: { size: 10, family: "'DM Sans', sans-serif" }, color: '#94a3b8', maxTicksLimit: 6 },
+          grid: { color: '#f1f5f9' },
+          title: {
+            display: true,
+            text: xLabel,
+            color: '#64748b',
+            font: { size: 11, family: "'DM Sans', sans-serif", weight: '500' },
+            padding: { top: 4 }
+          }
+        },
+        y: {
+          ticks: { font: { size: 10, family: "'DM Sans', sans-serif" }, color: '#94a3b8' },
+          grid: { color: '#f1f5f9' },
+          title: {
+            display: true,
+            text: yLabel,
+            color: '#64748b',
+            font: { size: 11, family: "'DM Sans', sans-serif", weight: '500' },
+            padding: { bottom: 4 }
+          }
+        }
+      }
+    }
+  });
+}
+
+let charts = {
+  acc:       createChart("accChart",       "Filtered Acc",   chartColors.acc,       "Time (s)", "Acceleration (m/s²)"),
+  speedAcc:  createChart("speedAccChart",  "Speed",          chartColors.speedAcc,  "Time (s)", "Speed (m/s)"),
+  steps:     createChart("stepsChart",     "Steps",          chartColors.steps,     "Time (s)", "Step Count"),
+  distance:  createChart("distanceChart",  "Distance",       chartColors.distance,  "Time (s)", "Distance (m)"),
+  speed:     createChart("speedChart",     "Walk Speed",     chartColors.speed,     "Time (s)", "Speed (m/s)"),
+  cadence:   createChart("cadenceChart",   "Cadence",        chartColors.cadence,   "Time (s)", "Steps / min"),
+  calories:  createChart("caloriesChart",  "Calories",       chartColors.calories,  "Time (s)", "Energy (kcal)"),
+  time:      createChart("timeChart",      "Active Time",    chartColors.time,      "Time (s)", "Duration (s)"),
+  activity:  createChart("activityChart",  "Activity Level", chartColors.activity,  "Time (s)", "Level (0=Sed, 1=Act, 2=Very)"),
+  threshold: createChart("thresholdChart", "Threshold",      chartColors.threshold, "Time (s)", "Threshold Value")
+};
+
+function updateStats() {
+  activeTime = Math.floor((Date.now() - startTime) / 1000);
+
+  let distance    = steps * STEP_LENGTH;
+  let walkingSpeed = activeTime > 0 ? distance / activeTime : 0;
+  let cadence     = activeTime > 0 ? (steps / activeTime) * 60 : 0;
+  let calories    = steps * 0.04;
+
+  let activityText = "Sedentary";
+  let activityNum  = 0;
+
+  if (cadence > 100)     { activityText = "Very Active"; activityNum = 2; }
+  else if (cadence > 50) { activityText = "Active";      activityNum = 1; }
+
+  document.getElementById("steps").innerText    = steps;
+  document.getElementById("distance").innerText = distance.toFixed(2) + " m";
+  document.getElementById("speed").innerText    = walkingSpeed.toFixed(2) + " m/s";
+  document.getElementById("cadence").innerHTML  = cadence.toFixed(0) + ' <span style="font-size:11px;font-family:\'DM Sans\';font-weight:400;color:var(--muted)">spm</span>';
+  document.getElementById("calories").innerHTML = calories.toFixed(2) + ' <span style="font-size:11px;font-family:\'DM Sans\';font-weight:400;color:var(--muted)">kcal</span>';
+  document.getElementById("time").innerText     = activeTime + " s";
+  document.getElementById("activity").innerText = activityText;
+
+  labels.push(activeTime);
+  dataStore.acc.push(filteredAcc);
+  dataStore.speedAcc.push(velocity);
+  dataStore.steps.push(steps);
+  dataStore.distance.push(distance);
+  dataStore.speed.push(walkingSpeed);
+  dataStore.cadence.push(cadence);
+  dataStore.calories.push(calories);
+  dataStore.time.push(activeTime);
+  dataStore.activity.push(activityNum);
+  dataStore.threshold.push(STEP_THRESHOLD);
+
+  if (labels.length > 30) {
+    labels.shift();
+    for (let key in dataStore) dataStore[key].shift();
+  }
+
+  for (let key in charts) {
+    charts[key].data.labels = labels;
+    charts[key].data.datasets[0].data = dataStore[key];
+    charts[key].update();
+  }
+}
+</script>
+
+</body>
+</html>

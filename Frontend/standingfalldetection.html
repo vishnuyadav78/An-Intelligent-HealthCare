@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Fall Detection System</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+
+    <style>
+    /* ═══════════════════════════════════════════
+       RESET & BASE
+    ═══════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+        --accent:        #4361ee;
+        --accent-soft:   #eef0fd;
+        --danger:        #ef233c;
+        --danger-soft:   #fff0f2;
+        --success:       #06d6a0;
+        --success-soft:  #edfaf5;
+        --warn:          #f59e0b;
+        --warn-soft:     #fffbeb;
+        --bg:            #f4f5f9;
+        --surface:       #ffffff;
+        --border:        #e4e7ee;
+        --border-focus:  #4361ee;
+        --text-1:        #111827;
+        --text-2:        #6b7280;
+        --text-3:        #9ca3af;
+        --shadow-sm:     0 1px 4px rgba(0,0,0,.06);
+        --shadow-md:     0 4px 20px rgba(0,0,0,.08);
+        --r-sm:          8px;
+        --r-md:          14px;
+        --r-lg:          20px;
+    }
+
+    html { font-size: 16px; }
+
+    body {
+        font-family: 'DM Sans', sans-serif;
+        background: var(--bg);
+        color: var(--text-1);
+        min-height: 100vh;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    /* ═══════════════════════════════════════════
+       TOP NAV BAR
+    ═══════════════════════════════════════════ */
+    .topbar {
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        padding: 0 16px;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        box-shadow: var(--shadow-sm);
+    }
+    .topbar-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .topbar-icon {
+        width: 34px; height: 34px;
+        background: var(--accent);
+        border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+    }
+    .topbar-icon svg { width: 17px; height: 17px; color: #fff; }
+    .topbar-title {
+        font-family: 'Syne', sans-serif;
+        font-size: clamp(0.85rem, 3vw, 1.05rem);
+        font-weight: 800;
+        color: var(--text-1);
+        letter-spacing: -0.01em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .topbar-title span { color: var(--accent); }
+    .topbar-badge {
+        font-size: 0.68rem;
+        font-weight: 600;
+        background: var(--accent-soft);
+        color: var(--accent);
+        padding: 4px 10px;
+        border-radius: 100px;
+        letter-spacing: 0.05em;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    /* ═══════════════════════════════════════════
+       PAGE WRAPPER
+    ═══════════════════════════════════════════ */
+    .page {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 16px 14px 80px;
+    }
+
+    /* ═══════════════════════════════════════════
+       STATUS BANNER
+    ═══════════════════════════════════════════ */
+    .status-banner {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 12px 20px;
+        border-radius: var(--r-md);
+        background: var(--surface);
+        border: 1.5px solid var(--border);
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-2);
+        margin-bottom: 16px;
+        transition: background 0.3s, color 0.3s, border-color 0.3s;
+        box-shadow: var(--shadow-sm);
+    }
+    .s-dot {
+        width: 9px; height: 9px;
+        border-radius: 50%;
+        background: var(--text-3);
+        flex-shrink: 0;
+        transition: background 0.3s;
+    }
+    .status-banner.sensing { background: var(--success-soft); color: var(--success); border-color: #86efcf; }
+    .status-banner.sensing .s-dot { background: var(--success); animation: pulse-dot 1.4s infinite; }
+    .status-banner.alarm-active { background: var(--danger-soft); color: var(--danger); border-color: #fca5a5; animation: shake 0.35s ease infinite; }
+    .status-banner.alarm-active .s-dot { background: var(--danger); animation: pulse-dot 0.5s infinite; }
+
+    @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.7)} }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 30%{transform:translateX(-4px)} 70%{transform:translateX(4px)} }
+
+    /* ═══════════════════════════════════════════
+       METRICS ROW
+    ═══════════════════════════════════════════ */
+    .metrics-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+    .metric-tile {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--r-md);
+        padding: 14px 8px 12px;
+        text-align: center;
+        box-shadow: var(--shadow-sm);
+        transition: border-color .2s, box-shadow .2s;
+        min-width: 0;
+    }
+    .metric-tile:hover { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .m-label {
+        font-size: 0.62rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: var(--text-3);
+        margin-bottom: 6px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .m-val {
+        font-family: 'Syne', sans-serif;
+        font-size: clamp(1.15rem, 3.5vw, 1.6rem);
+        font-weight: 800;
+        color: var(--accent);
+        line-height: 1;
+    }
+    .m-unit {
+        font-size: 0.58rem;
+        color: var(--text-3);
+        font-weight: 500;
+        margin-top: 4px;
+    }
+
+    /* ═══════════════════════════════════════════
+       MAIN GRID
+    ═══════════════════════════════════════════ */
+    .main-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    /* ═══════════════════════════════════════════
+       SECTION CARD
+    ═══════════════════════════════════════════ */
+    .sec {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: 18px 16px;
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 12px;
+    }
+    .sec:last-of-type { margin-bottom: 0; }
+    .sec.warn-tint { background: var(--warn-soft); border-color: #fde68a; }
+
+    .sec-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 14px;
+    }
+    .sec-ico {
+        width: 30px; height: 30px;
+        border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+    }
+    .sec-ico svg { width: 14px; height: 14px; }
+    .sec-ico.blue  { background: var(--accent-soft); color: var(--accent); }
+    .sec-ico.green { background: var(--success-soft); color: var(--success); }
+    .sec-ico.amber { background: var(--warn-soft); color: var(--warn); }
+    .sec-title {
+        font-size: 0.73rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.09em;
+        color: var(--text-2);
+    }
+
+    /* ═══════════════════════════════════════════
+       TOGGLES
+    ═══════════════════════════════════════════ */
+    .toggle-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+    .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 11px 13px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: var(--r-sm);
+        gap: 10px;
+        min-height: 46px;
+        cursor: pointer;
+        transition: border-color .2s;
+    }
+    .toggle-row:hover { border-color: var(--accent); }
+    .t-label { font-size: 0.85rem; font-weight: 500; color: var(--text-1); }
+    .switch { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+    .switch input { display: none; }
+    .switch-track {
+        position: absolute; inset: 0;
+        background: #d1d5db;
+        border-radius: 100px;
+        cursor: pointer;
+        transition: background .2s;
+    }
+    .switch-track::after {
+        content: '';
+        position: absolute;
+        top: 3px; left: 3px;
+        width: 16px; height: 16px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 1px 4px rgba(0,0,0,.2);
+        transition: transform .2s;
+    }
+    .switch input:checked ~ .switch-track { background: var(--accent); }
+    .switch input:checked ~ .switch-track::after { transform: translateX(18px); }
+
+    /* ═══════════════════════════════════════════
+       GATE SELECTOR
+    ═══════════════════════════════════════════ */
+    .gate-row { display: flex; gap: 8px; margin-bottom: 12px; }
+    .gate-opt { flex: 1; }
+    .gate-opt input { display: none; }
+    .gate-opt label {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        padding: 10px 6px;
+        border: 1.5px solid var(--border);
+        border-radius: var(--r-sm);
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        background: var(--bg);
+        color: var(--text-2);
+        transition: all .2s;
+        min-height: 44px;
+        white-space: nowrap;
+    }
+    .gate-opt input:checked + label {
+        background: var(--accent); color: #fff;
+        border-color: var(--accent);
+        box-shadow: 0 3px 10px rgba(67,97,238,.25);
+    }
+
+    /* ═══════════════════════════════════════════
+       INPUTS
+    ═══════════════════════════════════════════ */
+    .field { margin-bottom: 10px; }
+    .field:last-of-type { margin-bottom: 0; }
+    .field label {
+        display: block;
+        font-size: 0.74rem;
+        font-weight: 600;
+        color: var(--text-2);
+        margin-bottom: 5px;
+    }
+    .field input {
+        width: 100%;
+        padding: 11px 13px;
+        border: 1.5px solid var(--border);
+        border-radius: var(--r-sm);
+        font-size: 0.9rem;
+        font-family: 'DM Sans', sans-serif;
+        background: var(--surface);
+        color: var(--text-1);
+        outline: none;
+        transition: border-color .2s, box-shadow .2s;
+        min-height: 44px;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+    .field input::placeholder { color: var(--text-3); }
+    .field input:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+    /* ═══════════════════════════════════════════
+       BUTTONS
+    ═══════════════════════════════════════════ */
+    .btn {
+        display: flex; align-items: center; justify-content: center; gap: 7px;
+        width: 100%; border: none; border-radius: var(--r-sm);
+        font-family: 'DM Sans', sans-serif;
+        font-weight: 600; cursor: pointer;
+        font-size: 0.875rem; padding: 12px 16px;
+        min-height: 44px; margin-top: 12px;
+        transition: all .2s; text-align: center;
+    }
+    .btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+    .btn-blue  { background: var(--accent); color: #fff; box-shadow: 0 2px 10px rgba(67,97,238,.25); }
+    .btn-blue:hover  { background: #3451d1; transform: translateY(-1px); }
+    .btn-ghost { background: var(--bg); color: var(--text-2); border: 1.5px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+    .btn-amber { background: var(--warn); color: #78350f; }
+    .btn-amber:hover { background: #d97706; transform: translateY(-1px); }
+    .btn:active { transform: translateY(0) scale(.98); }
+
+    .btn-monitor {
+        display: flex; align-items: center; justify-content: center; gap: 10px;
+        width: 100%; border: none; border-radius: var(--r-md);
+        font-family: 'Syne', sans-serif;
+        font-size: 1rem; font-weight: 800;
+        letter-spacing: 0.04em;
+        padding: 18px 20px; min-height: 56px;
+        background: var(--accent); color: #fff;
+        box-shadow: 0 6px 22px rgba(67,97,238,.3);
+        cursor: pointer; transition: all .25s; margin-top: 14px;
+    }
+    .btn-monitor svg { width: 20px; height: 20px; flex-shrink: 0; }
+    .btn-monitor:hover { background: #3451d1; transform: translateY(-2px); box-shadow: 0 10px 28px rgba(67,97,238,.35); }
+    .btn-monitor:active { transform: translateY(0); }
+
+    /* ═══════════════════════════════════════════
+       CHARTS
+    ═══════════════════════════════════════════ */
+    .charts-panel { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    .chart-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: 16px;
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+        min-width: 0;
+    }
+    .chart-head {
+        display: flex; align-items: center; gap: 8px;
+        margin-bottom: 12px;
+    }
+    .c-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .chart-title {
+        font-size: 0.72rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.07em;
+        color: var(--text-2);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .chart-box { width: 100%; height: 170px; }
+
+    /* ═══════════════════════════════════════════
+       FOOTER
+    ═══════════════════════════════════════════ */
+    .footer {
+        text-align: center; margin-top: 36px;
+        font-size: 0.7rem; color: var(--text-3); letter-spacing: 0.03em;
+    }
+
+    #mailForm, iframe[name="hidden_iframe"] { display: none; }
+
+    /* ═══════════════════════════════════════════
+       RESPONSIVE — TABLET (≥600px)
+    ═══════════════════════════════════════════ */
+    @media (min-width: 600px) {
+        .page { padding: 20px 20px 80px; }
+        .topbar { padding: 0 20px; }
+        .metrics-row { gap: 12px; }
+        .metric-tile { padding: 18px 12px 14px; }
+        .m-label { font-size: 0.66rem; }
+        .charts-panel { grid-template-columns: 1fr 1fr; }
+        .chart-card.span-2 { grid-column: 1 / -1; }
+        .chart-box { height: 190px; }
+    }
+
+    /* ═══════════════════════════════════════════
+       RESPONSIVE — DESKTOP (≥960px)
+    ═══════════════════════════════════════════ */
+    @media (min-width: 960px) {
+        .page { padding: 24px 28px 80px; }
+        .topbar { padding: 0 28px; height: 60px; }
+
+        .main-grid {
+            grid-template-columns: 380px 1fr;
+            align-items: start;
+            gap: 20px;
+        }
+
+        .panel-col { position: sticky; top: 76px; }
+
+        .sec { padding: 20px; }
+        .chart-box { height: 200px; }
+    }
+
+    /* ═══════════════════════════════════════════
+       RESPONSIVE — LARGE (≥1200px)
+    ═══════════════════════════════════════════ */
+    @media (min-width: 1200px) {
+        .main-grid { grid-template-columns: 410px 1fr; gap: 24px; }
+        .page { padding: 28px 32px 80px; }
+    }
+
+    /* ═══════════════════════════════════════════
+       SMALL PHONES (≤380px)
+    ═══════════════════════════════════════════ */
+    @media (max-width: 380px) {
+        .topbar-badge { display: none; }
+        .topbar-title { font-size: 0.82rem; }
+        .m-label { font-size: 0.55rem; letter-spacing: 0.04em; }
+        .m-val { font-size: 1.1rem; }
+        .sec { padding: 14px 12px; }
+        .btn-monitor { font-size: 0.9rem; padding: 16px; }
+        .t-label { font-size: 0.8rem; }
+        .gate-opt label { font-size: 0.75rem; padding: 9px 4px; }
+    }
+    </style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<header class="topbar">
+    <div class="topbar-brand">
+        <div class="topbar-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+        </div>
+        <div class="topbar-title">Fall <span>Detection</span> System</div>
+    </div>
+    <div class="topbar-badge">Real-time Sensing</div>
+</header>
+
+<!-- PAGE -->
+<div class="page">
+
+    <!-- Status -->
+    <div id="status" class="status-banner">
+        <span class="s-dot" id="statusDot"></span>
+        <span id="statusText">System Ready</span>
+    </div>
+
+    <!-- Metrics -->
+    <div class="metrics-row">
+        <div class="metric-tile">
+            <div class="m-label">Acceleration</div>
+            <div class="m-val" id="v-accel">0.0</div>
+            <div class="m-unit">m/s²</div>
+        </div>
+        <div class="metric-tile">
+            <div class="m-label">Gyroscope</div>
+            <div class="m-val" id="v-gyro">0.0</div>
+            <div class="m-unit">deg/s</div>
+        </div>
+        <div class="metric-tile">
+            <div class="m-label">Speed</div>
+            <div class="m-val" id="v-speed">0.0</div>
+            <div class="m-unit">magnitude</div>
+        </div>
+    </div>
+
+    <!-- Main 2-col grid -->
+    <div class="main-grid">
+
+        <!-- LEFT: Controls -->
+        <div class="panel-col">
+
+            <!-- Sensing Logic -->
+            <div class="sec">
+                <div class="sec-head">
+                    <div class="sec-ico blue">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    </div>
+                    <span class="sec-title">Sensing Logic</span>
+                </div>
+                <div class="toggle-list">
+                    <label class="toggle-row">
+                        <span class="t-label">Acceleration Monitor</span>
+                        <label class="switch"><input type="checkbox" id="c-accel" checked><span class="switch-track"></span></label>
+                    </label>
+                    <label class="toggle-row">
+                        <span class="t-label">Gyroscope Monitor</span>
+                        <label class="switch"><input type="checkbox" id="c-gyro" checked><span class="switch-track"></span></label>
+                    </label>
+                    <label class="toggle-row">
+                        <span class="t-label">Speed Monitor</span>
+                        <label class="switch"><input type="checkbox" id="c-speed" checked><span class="switch-track"></span></label>
+                    </label>
+                </div>
+                <div class="gate-row">
+                    <div class="gate-opt">
+                        <input type="radio" name="gate" id="gate-or" value="OR" checked>
+                        <label for="gate-or">⚡ OR Logic</label>
+                    </div>
+                    <div class="gate-opt">
+                        <input type="radio" name="gate" id="gate-and" value="AND">
+                        <label for="gate-and">🔗 AND Logic</label>
+                    </div>
+                </div>
+                <button class="btn btn-blue" id="btn-logic">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    Apply Sensing Logic
+                </button>
+            </div>
+
+            <!-- Thresholds -->
+            <div class="sec">
+                <div class="sec-head">
+                    <div class="sec-ico green">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    </div>
+                    <span class="sec-title">Parameter Thresholds</span>
+                </div>
+                <div class="field">
+                    <label>Acceleration Threshold (m/s²)</label>
+                    <input type="number" id="i-accel" value="25" inputmode="decimal">
+                </div>
+                <div class="field">
+                    <label>Gyroscope Threshold (deg/s)</label>
+                    <input type="number" id="i-gyro" value="200" inputmode="decimal">
+                </div>
+                <div class="field">
+                    <label>Speed Magnitude Threshold</label>
+                    <input type="number" id="i-speed" value="15" inputmode="decimal">
+                </div>
+                <button class="btn btn-ghost" id="btn-threshold">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    Update Threshold Values
+                </button>
+            </div>
+
+            <!-- Emergency -->
+            <div class="sec warn-tint">
+                <div class="sec-head">
+                    <div class="sec-ico amber">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.9 12.75a19.79 19.79 0 01-3.07-8.67A2 2 0 012.81 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L7 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+                    </div>
+                    <span class="sec-title">Emergency Notification</span>
+                </div>
+                <div class="field">
+                    <label>Guardian Email Address</label>
+                    <input type="email" id="user-email" placeholder="guardian@example.com" inputmode="email">
+                </div>
+                <div class="field">
+                    <label>Current Location (Manual)</label>
+                    <input type="text" id="user-location" placeholder="e.g., Bedroom, 1st Floor">
+                </div>
+                <button class="btn btn-amber" id="btn-update">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    Save Emergency Details
+                </button>
+            </div>
+
+            <!-- Monitor CTA -->
+            <button class="btn-monitor" id="btn-start">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" id="btn-icon">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+                <span id="btn-start-text">Start Monitoring</span>
+            </button>
+
+        </div>
+
+        <!-- RIGHT: Charts -->
+        <div class="charts-panel">
+            <div class="chart-card">
+                <div class="chart-head"><span class="c-dot" style="background:#4361ee"></span><span class="chart-title">Acceleration vs Threshold</span></div>
+                <div class="chart-box"><canvas id="chartAccel"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-head"><span class="c-dot" style="background:#7b5ea7"></span><span class="chart-title">Gyroscope vs Threshold</span></div>
+                <div class="chart-box"><canvas id="chartGyro"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-head"><span class="c-dot" style="background:#06d6a0"></span><span class="chart-title">Speed Magnitude vs Threshold</span></div>
+                <div class="chart-box"><canvas id="chartSpeed"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-head"><span class="c-dot" style="background:#f59e0b"></span><span class="chart-title">Logic Gate Trigger Status</span></div>
+                <div class="chart-box"><canvas id="chartLogic"></canvas></div>
+            </div>
+            <div class="chart-card span-2">
+                <div class="chart-head"><span class="c-dot" style="background:#ef233c"></span><span class="chart-title">Fall Detection Alarm State</span></div>
+                <div class="chart-box"><canvas id="chartAlarm"></canvas></div>
+            </div>
+        </div>
+
+    </div>
+
+    <p class="footer">Fall Detection System &nbsp;·&nbsp; Real-time motion sensing &nbsp;·&nbsp; Emergency alert enabled</p>
+
+</div>
+
+<!-- Hidden form & audio -->
+<form id="mailForm" method="POST" target="hidden_iframe">
+    <input type="hidden" name="message" id="mailMessage">
+    <input type="hidden" name="_captcha" value="false">
+    <input type="hidden" name="_subject" value="URGENT: Fall Detected Alert">
+</form>
+<iframe name="hidden_iframe"></iframe>
+<audio id="alarmAudio" src="alarm.mp3"></audio>
+
+<script>
+    /* ═══════════════════════════════════════════
+       ORIGINAL JAVASCRIPT — FULLY PRESERVED
+    ═══════════════════════════════════════════ */
+    let isSensing = false, isAlarming = false;
+    let config = {
+        acceleration: true, gyroscope: true, speed: true,
+        gate: 'OR',
+        thresholdAcceleration: 25, thresholdGyroscope: 200, thresholdSpeed: 15,
+        email: "", location: ""
+    };
+
+    let filterAcceleration = 0, filterGyroscope = 0, filterSpeed = 0, filterLogic = 0, filterAlarm = 0;
+    const alpha = 0.15;
+    const MAX_POINTS = 30;
+
+    function initChart(id, label, color, yLabel, hasThreshold = true) {
+        return new Chart(document.getElementById(id), {
+            type: 'line',
+            data: {
+                labels: Array(MAX_POINTS).fill(''),
+                datasets: [
+                    { label: label, data: Array(MAX_POINTS).fill(0), borderColor: color, backgroundColor: color + '18', tension: 0.4, borderWidth: 2, pointRadius: 0, fill: true },
+                    hasThreshold ? { label: 'Threshold', data: Array(MAX_POINTS).fill(0), borderColor: '#ef233c', borderDash: [5, 5], pointRadius: 0, fill: false, borderWidth: 1.5 } : null
+                ].filter(Boolean)
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, animation: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { display: true, grid: { color: '#f1f3f9' }, ticks: { font: { size: 9, family: 'DM Sans' }, color: '#9ca3af', maxTicksLimit: 6 }, title: { display: true, text: 'Time (s)', font: { size: 9 }, color: '#9ca3af' } },
+                    y: { beginAtZero: true, grid: { color: '#f1f3f9' }, ticks: { font: { size: 9, family: 'DM Sans' }, color: '#9ca3af' }, title: { display: true, text: yLabel, font: { size: 10, weight: '600' }, color: '#6b7280' } }
+                }
+            }
+        });
+    }
+
+    const charts = {
+        accel: initChart('chartAccel', 'Acceleration', '#4361ee', 'm/s²'),
+        gyro:  initChart('chartGyro',  'Gyroscope',   '#7b5ea7', 'deg/s'),
+        speed: initChart('chartSpeed', 'Speed',        '#06d6a0', 'Magnitude'),
+        logic: initChart('chartLogic', 'Logic',        '#f59e0b', 'State (0/1)', false),
+        alarm: initChart('chartAlarm', 'Alarm',        '#ef233c', 'State (0/1)', false)
+    };
+
+    document.getElementById('btn-logic').onclick = () => {
+        config.acceleration = document.getElementById('c-accel').checked;
+        config.gyroscope    = document.getElementById('c-gyro').checked;
+        config.speed        = document.getElementById('c-speed').checked;
+        config.gate         = document.querySelector('input[name="gate"]:checked').value;
+        alert("Sensing logic updated.");
+    };
+
+    document.getElementById('btn-threshold').onclick = () => {
+        config.thresholdAcceleration = parseFloat(document.getElementById('i-accel').value);
+        config.thresholdGyroscope    = parseFloat(document.getElementById('i-gyro').value);
+        config.thresholdSpeed        = parseFloat(document.getElementById('i-speed').value);
+        alert("Thresholds updated.");
+    };
+
+    document.getElementById('btn-update').onclick = () => {
+        config.email    = document.getElementById('user-email').value;
+        config.location = document.getElementById('user-location').value;
+        alert("Emergency info saved.");
+    };
+
+    function processMotion(event) {
+        if (!isSensing) return;
+        const accel = event.accelerationIncludingGravity || {x:0, y:0, z:0};
+        const gyro  = event.rotationRate || {alpha:0, beta:0, gamma:0};
+
+        filterAcceleration = (Math.sqrt(accel.x**2 + accel.y**2 + accel.z**2) * alpha) + (filterAcceleration * (1 - alpha));
+        filterGyroscope    = (Math.sqrt(gyro.alpha**2 + gyro.beta**2 + gyro.gamma**2) * alpha) + (filterGyroscope * (1 - alpha));
+        filterSpeed        = filterAcceleration;
+
+        document.getElementById('v-accel').innerText = filterAcceleration.toFixed(1);
+        document.getElementById('v-gyro').innerText  = filterGyroscope.toFixed(1);
+        document.getElementById('v-speed').innerText = filterSpeed.toFixed(1);
+
+        let conditions = [];
+        if (config.acceleration) conditions.push(filterAcceleration > config.thresholdAcceleration);
+        if (config.gyroscope)    conditions.push(filterGyroscope    > config.thresholdGyroscope);
+        if (config.speed)        conditions.push(filterSpeed        > config.thresholdSpeed);
+
+        let isTriggered = false;
+        if (conditions.length > 0) {
+            isTriggered = (config.gate === 'OR') ? conditions.some(v => v) : conditions.every(v => v);
+            if (isTriggered && !isAlarming) activateAlarm();
+        }
+
+        filterLogic = isTriggered ? 1 : 0;
+        filterAlarm = isAlarming ? 1 : 0;
+    }
+
+    function updateGraphs() {
+        if (!isSensing) return;
+        const timeLabel = new Date().toLocaleTimeString().split(' ')[0];
+        const push = (chart, val, threshold) => {
+            chart.data.labels.push(timeLabel); chart.data.labels.shift();
+            chart.data.datasets[0].data.push(val); chart.data.datasets[0].data.shift();
+            if (threshold !== undefined) { chart.data.datasets[1].data.push(threshold); chart.data.datasets[1].data.shift(); }
+            chart.update();
+        };
+        push(charts.accel, filterAcceleration, config.thresholdAcceleration);
+        push(charts.gyro,  filterGyroscope,    config.thresholdGyroscope);
+        push(charts.speed, filterSpeed,        config.thresholdSpeed);
+        push(charts.logic, filterLogic);
+        push(charts.alarm, filterAlarm);
+    }
+
+    function activateAlarm() {
+        isAlarming = true;
+        const banner     = document.getElementById('status');
+        const statusText = document.getElementById('statusText');
+        banner.className = 'status-banner alarm-active';
+        statusText.innerText = 'Fall Detected!';
+        document.getElementById('alarmAudio').play().catch(() => {});
+
+        if (config.email) {
+            const timestamp = new Date().toLocaleString();
+            const form = document.getElementById('mailForm');
+            form.action = `https://formsubmit.co/${config.email}`;
+            document.getElementById('mailMessage').value =
+                `--- FALL DETECTION EMERGENCY ---\n\n` +
+                `Timestamp: ${timestamp}\n` +
+                `Manual Location: ${config.location || "Not specified"}\n\n` +
+                `Sensor Data:\n` +
+                `- Acceleration: ${filterAcceleration.toFixed(2)} m/s²\n` +
+                `- Gyroscope: ${filterGyroscope.toFixed(2)} deg/s\n` +
+                `- Speed Magnitude: ${filterSpeed.toFixed(2)}\n\n` +
+                `Immediate attention required.`;
+            form.submit();
+        }
+
+        setTimeout(() => {
+            isAlarming = false;
+            if (isSensing) {
+                banner.className = 'status-banner sensing';
+                statusText.innerText = 'Sensing Active';
+            }
+        }, 6000);
+    }
+
+    document.getElementById('btn-start').onclick = () => {
+        if (!isSensing) {
+            if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+                DeviceMotionEvent.requestPermission().then(res => { if (res === 'granted') startSensing(); });
+            } else { startSensing(); }
+        } else { stopSensing(); }
+    };
+
+    function startSensing() {
+        isSensing = true;
+        window.addEventListener('devicemotion', processMotion);
+        this.graphInterval = setInterval(updateGraphs, 500);
+        const btn = document.getElementById('btn-start');
+        btn.style.background = '#ef233c';
+        btn.style.boxShadow  = '0 6px 22px rgba(239,35,60,.3)';
+        document.getElementById('btn-start-text').innerText = 'Stop Monitoring';
+        document.getElementById('btn-icon').innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+        const banner = document.getElementById('status');
+        banner.className = 'status-banner sensing';
+        document.getElementById('statusText').innerText = 'Sensing Active';
+    }
+
+    function stopSensing() {
+        isSensing = false;
+        window.removeEventListener('devicemotion', processMotion);
+        clearInterval(this.graphInterval);
+        const btn = document.getElementById('btn-start');
+        btn.style.background = '#4361ee';
+        btn.style.boxShadow  = '0 6px 22px rgba(67,97,238,.3)';
+        document.getElementById('btn-start-text').innerText = 'Start Monitoring';
+        document.getElementById('btn-icon').innerHTML = '<polygon points="5 3 19 12 5 21 5 3"/>';
+        const banner = document.getElementById('status');
+        banner.className = 'status-banner';
+        document.getElementById('statusText').innerText = 'System Ready';
+    }
+</script>
+</body>
+</html>

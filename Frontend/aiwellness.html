@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Wellness Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --white: #ffffff;
+    --bg: #f5f7fa;
+    --surface: #ffffff;
+    --border: #e8ecf1;
+    --accent: #2563eb;
+    --accent-light: #eff4ff;
+    --accent-2: #0ea5e9;
+    --text-primary: #0f172a;
+    --text-secondary: #64748b;
+    --text-muted: #94a3b8;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.07), 0 2px 6px rgba(0,0,0,0.04);
+    --shadow-lg: 0 10px 40px rgba(0,0,0,0.09), 0 4px 12px rgba(0,0,0,0.05);
+    --radius-sm: 10px;
+    --radius-md: 16px;
+    --radius-lg: 24px;
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: 'Sora', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .header-logo {
+    width: 38px;
+    height: 38px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+
+  header h1 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+  }
+
+  .header-badge {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 3px 10px;
+    margin-left: 6px;
+  }
+
+  .live-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--success);
+  }
+
+  .live-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--success);
+    border-radius: 50%;
+    animation: pulse-dot 1.8s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.3); }
+  }
+
+  /* ── MAIN LAYOUT ── */
+  .main {
+    padding: 28px 28px 100px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* ── TOP ROW ── */
+  .top-row {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 24px;
+    margin-bottom: 28px;
+    align-items: start;
+  }
+
+  /* ── VIDEO CARD ── */
+  .video-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    width: 360px;
+  }
+
+  .video-card-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .video-card-title {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .video-container {
+    padding: 0;
+    position: relative;
+  }
+
+  video {
+    width: 100%;
+    display: block;
+    background: #0f172a;
+    min-height: 200px;
+  }
+
+  .video-overlay-badge {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(8px);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.03em;
+  }
+
+  /* ── METRICS PANEL ── */
+  .panel {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+  }
+
+  .panel h2 {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+  }
+
+  .parameter {
+    background: var(--white);
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: background 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .parameter::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .parameter:hover { background: var(--accent-light); }
+  .parameter:hover::before { opacity: 1; }
+
+  .param-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+  }
+
+  .parameter span {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* ── GRAPH SECTION ── */
+  .section-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .graph-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    width: 100%;
+    margin: 0;
+  }
+
+  .graph-box {
+    background: var(--surface);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    transition: box-shadow 0.25s, transform 0.25s;
+  }
+
+  .graph-box:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+  }
+
+  .graph-box-header {
+    padding: 10px 14px 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border);
+    background: #fcfdff;
+  }
+
+  canvas {
+    width: 100% !important;
+    height: 150px !important;
+    display: block;
+    padding: 6px;
+  }
+
+  /* ── FOOTER ── */
+  .site-footer {
+    text-align: center;
+    padding: 20px;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border);
+    background: var(--white);
+    margin-top: 40px;
+    letter-spacing: 0.01em;
+  }
+
+  /* ── CHATBOT ── */
+  #chat-icon {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    border-radius: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-size: 22px;
+    cursor: pointer;
+    z-index: 1001;
+    box-shadow: 0 4px 20px rgba(37,99,235,0.35);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  #chat-icon:hover {
+    transform: translateY(-2px) scale(1.04);
+    box-shadow: 0 8px 28px rgba(37,99,235,0.45);
+  }
+
+  #chatbot {
+    position: fixed;
+    bottom: 92px;
+    right: 28px;
+    width: 320px;
+    max-height: 420px;
+    background: var(--white);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.14), 0 4px 16px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 1000;
+    transform: scale(0.92) translateY(16px);
+    opacity: 0;
+    transform-origin: bottom right;
+    transition: transform 0.28s cubic-bezier(.34,1.56,.64,1), opacity 0.22s ease;
+    border: 1px solid var(--border);
+    pointer-events: none;
+  }
+
+  #chatbot.show {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  #chatbot-header {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: white;
+    padding: 14px 18px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  #chatbot-header::before {
+    content: '✦';
+    font-size: 14px;
+    opacity: 0.8;
+  }
+
+  #chatbot-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 14px;
+    overflow-y: auto;
+    gap: 8px;
+    background: var(--bg);
+  }
+
+  #chatbot-body::-webkit-scrollbar { width: 4px; }
+  #chatbot-body::-webkit-scrollbar-track { background: transparent; }
+  #chatbot-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .message {
+    padding: 9px 13px;
+    border-radius: 14px;
+    max-width: 85%;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    font-weight: 400;
+  }
+
+  .message.user {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: white;
+    align-self: flex-end;
+    border-radius: 14px 14px 2px 14px;
+    box-shadow: 0 2px 8px rgba(37,99,235,0.25);
+  }
+
+  .message.bot {
+    background: var(--white);
+    color: var(--text-primary);
+    align-self: flex-start;
+    border-radius: 14px 14px 14px 2px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+
+  #chatbot-input {
+    display: flex;
+    border-top: 1px solid var(--border);
+    background: var(--white);
+    padding: 10px 12px;
+    gap: 8px;
+    align-items: center;
+  }
+
+  #chatbot-input input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    outline: none;
+    font-size: 0.82rem;
+    font-family: 'Sora', sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  #chatbot-input input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+  }
+
+  #chatbot-input button {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: white;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-family: 'Sora', sans-serif;
+    font-weight: 600;
+    transition: opacity 0.2s, transform 0.2s;
+  }
+
+  #chatbot-input button:hover { opacity: 0.9; transform: scale(0.97); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 1100px) {
+    .top-row { grid-template-columns: 1fr; }
+    .video-card { width: 100%; }
+    .graph-container { grid-template-columns: repeat(2, 1fr); }
+    .metrics-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  @media (max-width: 680px) {
+    .main { padding: 18px 14px 90px; }
+    header { padding: 0 18px; }
+    header h1 { font-size: 0.95rem; }
+    .header-badge { display: none; }
+    .graph-container { grid-template-columns: 1fr; }
+    .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+    #chatbot { width: calc(100vw - 28px); right: 14px; }
+    #chat-icon { right: 14px; bottom: 14px; }
+    #chatbot { bottom: 78px; }
+  }
+
+  @media (max-width: 400px) {
+    .metrics-grid { grid-template-columns: 1fr; }
+  }
+
+  /* Fade-in for sections */
+  .fade-in {
+    animation: fadeUp 0.5s ease both;
+  }
+  .fade-in:nth-child(2) { animation-delay: 0.08s; }
+  .fade-in:nth-child(3) { animation-delay: 0.16s; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="header-brand">
+    <div class="header-logo">🧠</div>
+    <div>
+      <h1>AI Wellness Dashboard <span class="header-badge">Non-Diagnostic</span></h1>
+    </div>
+  </div>
+  <div class="live-indicator">
+    <div class="live-dot"></div>
+    Live Analysis
+  </div>
+</header>
+
+<!-- ── MAIN ── -->
+<div class="main">
+
+  <!-- Top Row: Video + Metrics -->
+  <div class="top-row">
+
+    <!-- Video Card -->
+    <div class="video-card fade-in">
+      <div class="video-card-header">
+        <span class="video-card-title">Camera Feed</span>
+        <div class="live-indicator"><div class="live-dot"></div>Active</div>
+      </div>
+      <div class="video-container">
+        <video id="video" autoplay playsinline></video>
+
+      </div>
+    </div>
+
+    <!-- Metrics Panel -->
+    <div class="panel fade-in">
+      <h2>Wellness Indicators</h2>
+      <div class="metrics-grid">
+        <div class="parameter">
+          <div class="param-label">Fatigue</div>
+          <span id="fatigue">--</span>
+        </div>
+        <div class="parameter">
+          <div class="param-label">Stress</div>
+          <span id="stress">--</span>
+        </div>
+        <div class="parameter">
+          <div class="param-label">Mood</div>
+          <span id="mood">--</span>
+        </div>
+        <div class="parameter">
+          <div class="param-label">Eye Fatigue</div>
+          <span id="eyeFatigue">--</span>
+        </div>
+        <div class="parameter">
+          <div class="param-label">Head Stability</div>
+          <span id="headStability">--</span>
+        </div>
+        <div class="parameter">
+          <div class="param-label">Blink Rate</div>
+          <span id="blinkRate">--</span>
+        </div>
+        <div class="parameter">
+          <div class="param-label">Yawns</div>
+          <span id="yawns">--</span>
+        </div>
+        <div class="parameter">
+          <div class="param-label">Pupil Dilation</div>
+          <span id="pupil">--</span>
+        </div>
+        <div class="parameter">
+          <div class="param-label">Micro-expression</div>
+          <span id="micro">--</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Graphs Section -->
+  <div class="section-label">Real-time Trends</div>
+
+  <div class="graph-container">
+    <div class="graph-box">
+      <div class="graph-box-header">Fatigue</div>
+      <canvas id="chartFatigue"></canvas>
+    </div>
+    <div class="graph-box">
+      <div class="graph-box-header">Stress</div>
+      <canvas id="chartStress"></canvas>
+    </div>
+    <div class="graph-box">
+      <div class="graph-box-header">Mood</div>
+      <canvas id="chartMood"></canvas>
+    </div>
+    <div class="graph-box">
+      <div class="graph-box-header">Eye Fatigue</div>
+      <canvas id="chartEye"></canvas>
+    </div>
+    <div class="graph-box">
+      <div class="graph-box-header">Head Stability</div>
+      <canvas id="chartHead"></canvas>
+    </div>
+    <div class="graph-box">
+      <div class="graph-box-header">Blink Rate</div>
+      <canvas id="chartBlink"></canvas>
+    </div>
+    <div class="graph-box">
+      <div class="graph-box-header">Yawns</div>
+      <canvas id="chartYawn"></canvas>
+    </div>
+    <div class="graph-box">
+      <div class="graph-box-header">Pupil Dilation</div>
+      <canvas id="chartPupil"></canvas>
+    </div>
+    <div class="graph-box">
+      <div class="graph-box-header">Micro-expression</div>
+      <canvas id="chartMicro"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<!-- Footer -->
+<footer class="site-footer">
+  ⚠ This system provides wellness indicators only and is not a medical diagnosis.
+</footer>
+
+<!-- Floating Chat Icon -->
+<div id="chat-icon">💬</div>
+
+<!-- Chatbot -->
+<div id="chatbot">
+  <div id="chatbot-header">AI Wellness Assistant</div>
+  <div id="chatbot-body"></div>
+  <div id="chatbot-input">
+    <input id="chatInput" type="text" placeholder="Ask something…">
+    <button id="chatSend">Send</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- ALL ORIGINAL JS BELOW — ZERO CHANGES           -->
+<!-- ═══════════════════════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// --- Existing parameter JS ---
+const video = document.getElementById('video');
+const fatigueEl = document.getElementById('fatigue');
+const stressEl = document.getElementById('stress');
+const moodEl = document.getElementById('mood');
+const eyeEl = document.getElementById('eyeFatigue');
+const headEl = document.getElementById('headStability');
+const blinkEl = document.getElementById('blinkRate');
+const yawnEl = document.getElementById('yawns');
+const pupilEl = document.getElementById('pupil');
+const microEl = document.getElementById('micro');
+
+let blinkCount=0, yawnCount=0, mouthOpen=false;
+let lastMood='Neutral', lastEye='15%', lastMicro='None', lastPupil='Moderate', lastUpdateTime=0;
+const updateInterval=2000;
+
+function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
+function getEAR(lm){ const left=[33,160,158,133,153,144]; const right=[362,385,387,263,373,380]; const calc=(eye)=>{ const A=dist(lm[eye[1]],lm[eye[5]]); const B=dist(lm[eye[2]],lm[eye[4]]); const C=dist(lm[eye[0]],lm[eye[3]]); return (A+B)/(2*C); }; return (calc(left)+calc(right))/2; }
+function getMAR(lm){ const A=dist(lm[13],lm[14]); const B=dist(lm[78],lm[308]); return A/B; }
+function getMoodWord(){ const moods=['Happy','Neutral','Sad','Angry']; return moods[Math.floor(Math.random()*4)]; }
+function getMicroWord(){ const list=['None','Slight Tension','Frown','Raised Eyebrow']; return list[Math.floor(Math.random()*4)]; }
+function getPupilWord(){ const list=['Small','Moderate','Large']; return list[Math.floor(Math.random()*3)]; }
+
+const faceMesh=new FaceMesh({locateFile:(file)=>`https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`});
+faceMesh.setOptions({maxNumFaces:1, refineLandmarks:true, minDetectionConfidence:0.5, minTrackingConfidence:0.5});
+faceMesh.onResults(onResults);
+const camera=new Camera(video,{onFrame: async()=>{await faceMesh.send({image:video});}, width:640,height:480});
+camera.start();
+
+let lastHeadDrop=0;
+
+function onResults(results){
+  if(!results.multiFaceLandmarks || results.multiFaceLandmarks.length==0) return;
+  const lm=results.multiFaceLandmarks[0];
+
+  const ear=getEAR(lm);
+  fatigueEl.innerText=ear<0.2?'High':'Normal';
+  if(ear<0.18) blinkCount++;
+  blinkEl.innerText=blinkCount;
+
+  const browTension=Math.abs(lm[70].y-lm[159].y);
+  stressEl.innerText=browTension>0.03?'Elevated':'Moderate';
+
+  const headDrop=Math.abs(lm[10].y-lm[152].y);
+  lastHeadDrop=lastHeadDrop*0.7+headDrop*0.3;
+  headEl.innerText=lastHeadDrop>0.4?'Good':'poor';
+
+  const mar=getMAR(lm);
+  if(mar>0.6 && !mouthOpen){ yawnCount++; mouthOpen=true; } else if(mar<0.3){ mouthOpen=false; }
+  yawnEl.innerText=yawnCount;
+
+  const now=Date.now();
+  if(now-lastUpdateTime>updateInterval){
+    lastMood=getMoodWord();
+    lastEye=`${Math.floor(Math.random()*30+10)}%`;
+    lastMicro=getMicroWord();
+    lastPupil=getPupilWord();
+    lastUpdateTime=now;
+  }
+
+  moodEl.innerText=lastMood;
+  eyeEl.innerText=lastEye;
+  microEl.innerText=lastMicro;
+  pupilEl.innerText=lastPupil;
+}
+
+// --- Chart.js setup ---
+const charts={}, labels=[];
+function createChart(canvasId,label,color){
+  const ctx=document.getElementById(canvasId).getContext('2d');
+  return new Chart(ctx,{type:'line',data:{labels:[],datasets:[{label:label,data:[],borderColor:color,fill:false,pointRadius:0}]},options:{animation:false,responsive:true,scales:{x:{title:{display:true,text:'Time'}},y:{title:{display:true,text:'Value'}}}}});
+}
+
+charts.fatigue=createChart('chartFatigue','Fatigue','red');
+charts.stress=createChart('chartStress','Stress','orange');
+charts.mood=createChart('chartMood','Mood','#d97706');
+charts.eye=createChart('chartEye','Eye Fatigue','green');
+charts.head=createChart('chartHead','Head Stability','blue');
+charts.blink=createChart('chartBlink','Blink Rate','purple');
+charts.yawn=createChart('chartYawn','Yawns','brown');
+charts.pupil=createChart('chartPupil','Pupil Dilation','#ec4899');
+charts.micro=createChart('chartMicro','Micro-expression','grey');
+
+function catToNum(value,type){
+  switch(type){
+    case 'Mood': return {'Happy':3,'Neutral':2,'Sad':1,'Angry':0}[value]||2;
+    case 'Head': { const hv={'Good':1,'poor':0}; return hv[value]!==undefined?hv[value]:1; }
+    case 'Pupil': return {'Small':0,'Moderate':1,'Large':2}[value]||1;
+    case 'Micro': return {'None':0,'Slight Tension':1,'Frown':2,'Raised Eyebrow':3}[value]||0;
+    case 'Fatigue': return {'High':1,'Normal':0}[value]||0;
+    case 'Stress': return {'Elevated':1,'Moderate':0}[value]||0;
+    default: return parseFloat(value)||0;
+  }
+}
+
+setInterval(()=>{
+  const now=new Date().toLocaleTimeString();
+  labels.push(now);
+  if(labels.length>30) labels.shift();
+
+  const values={
+    fatigue:catToNum(fatigueEl.innerText,'Fatigue'),
+    stress:catToNum(stressEl.innerText,'Stress'),
+    mood:catToNum(moodEl.innerText,'Mood'),
+    eye:parseFloat(eyeEl.innerText),
+    head:catToNum(headEl.innerText,'Head'),
+    blink:parseFloat(blinkEl.innerText),
+    yawn:parseFloat(yawnEl.innerText),
+    pupil:catToNum(pupilEl.innerText,'Pupil'),
+    micro:catToNum(microEl.innerText,'Micro')
+  };
+
+  for(let key in charts){
+    const chartData=charts[key].data.datasets[0].data;
+    chartData.push(values[key]);
+    if(chartData.length>30) chartData.shift();
+    charts[key].data.labels=labels;
+    charts[key].update();
+  }
+},1000);
+
+// --- Chatbot JS ---
+const chatIcon=document.getElementById('chat-icon');
+const chatWindow=document.getElementById('chatbot');
+const chatHeader=document.getElementById('chatbot-header');
+const chatBody=document.getElementById('chatbot-body');
+const chatInput=document.getElementById('chatInput');
+const chatSend=document.getElementById('chatSend');
+
+chatIcon.addEventListener('click',()=>{ chatWindow.classList.toggle('show'); });
+
+chatSend.addEventListener('click',()=>{ sendMessage(chatInput.value); });
+chatInput.addEventListener('keypress', e=>{ if(e.key==='Enter') sendMessage(chatInput.value); });
+
+function appendMessage(text,type){
+  const div=document.createElement('div');
+  div.className='message '+type;
+  div.innerText=text;
+  chatBody.appendChild(div);
+  chatBody.scrollTop=chatBody.scrollHeight;
+}
+
+async function sendMessage(msg) {
+  if (!msg) return;
+  appendMessage(msg, "user");
+  chatInput.value = "";
+
+  try {
+    const response = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": "AIzaSyBLpkrraEmNB-9iNMIpcqyK0tKQqyrdqXs"
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: msg }]
+            }
+          ]
+        })
+      }
+    );
+
+    const data = await response.json();
+    const botText =
+      data["candidates"]?.[0]?.content?.parts?.[0]?.text ||
+      "Sorry, no response from Gemini.";
+
+    appendMessage(botText, "bot");
+  } catch (err) {
+    console.error(err);
+    appendMessage("Error connecting to Gemini API", "bot");
+  }
+}
+</script>
+</body>
+</html>

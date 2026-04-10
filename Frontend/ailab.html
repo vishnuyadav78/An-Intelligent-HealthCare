@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intelligent Healthcare — Lab Analysis Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f7f8fc;
+    --surface: #ffffff;
+    --surface2: #f0f2f9;
+    --border: #e4e7f1;
+    --border-hover: #c5cce8;
+    --accent: #2563eb;
+    --accent-light: #eff4ff;
+    --accent-mid: #bfcffb;
+    --accent2: #0ea5e9;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --text: #0f172a;
+    --text-2: #475569;
+    --text-3: #94a3b8;
+    --shadow-sm: 0 1px 3px rgba(15,23,42,0.07), 0 1px 2px rgba(15,23,42,0.04);
+    --shadow: 0 4px 16px rgba(15,23,42,0.08), 0 1px 4px rgba(15,23,42,0.05);
+    --shadow-lg: 0 12px 40px rgba(15,23,42,0.12), 0 4px 12px rgba(15,23,42,0.07);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ─── NAV ─── */
+  nav {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(255,255,255,0.88);
+    backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    height: 64px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .nav-brand {
+    display: flex; align-items: center; gap: 10px;
+    text-decoration: none; color: var(--text);
+  }
+  .nav-logo {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 8px rgba(37,99,235,0.3);
+  }
+  .nav-logo svg { width: 20px; height: 20px; }
+  .nav-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.25rem; letter-spacing: -0.01em;
+  }
+  .nav-title span { color: var(--accent); }
+  .nav-badge {
+    font-size: 0.65rem; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--accent);
+    background: var(--accent-light);
+    border: 1px solid var(--accent-mid);
+    padding: 2px 8px; border-radius: 20px;
+  }
+
+  /* ─── HERO ─── */
+  .hero {
+    text-align: center;
+    padding: 4rem 2rem 2.5rem;
+    max-width: 700px; margin: 0 auto;
+    animation: fadeUp 0.6s ease both;
+  }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 0.78rem; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--accent);
+    background: var(--accent-light); border: 1px solid var(--accent-mid);
+    padding: 5px 14px; border-radius: 20px; margin-bottom: 1.25rem;
+  }
+  .hero-eyebrow::before {
+    content: ''; width: 6px; height: 6px;
+    background: var(--accent); border-radius: 50%;
+    animation: pulse 2s ease infinite;
+  }
+  h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2rem, 5vw, 3rem);
+    line-height: 1.15; letter-spacing: -0.02em;
+    color: var(--text); margin-bottom: 1rem;
+  }
+  h1 em { font-style: italic; color: var(--accent); }
+  .hero-sub {
+    font-size: 1.05rem; color: var(--text-2); font-weight: 400; max-width: 520px; margin: 0 auto;
+  }
+
+  /* ─── MAIN CARD ─── */
+  .main-container {
+    max-width: 900px; margin: 0 auto;
+    padding: 0 1.25rem 5rem;
+    animation: fadeUp 0.7s 0.1s ease both;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .card-section {
+    padding: 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .card-section:last-child { border-bottom: none; }
+
+  .section-label {
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text-3);
+    margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;
+  }
+  .section-label::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+  .section-num {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    font-size: 0.65rem; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* ─── SCAN TYPE GRID ─── */
+  .scan-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+  }
+  .scan-option { display: none; }
+  .scan-label {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 10px; padding: 1.1rem 0.8rem;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer; transition: all 0.2s ease;
+    background: var(--surface);
+    user-select: none;
+  }
+  .scan-label:hover {
+    border-color: var(--accent-mid);
+    background: var(--accent-light);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+  }
+  .scan-option:checked + .scan-label {
+    border-color: var(--accent);
+    background: var(--accent-light);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.12), var(--shadow-sm);
+  }
+  .scan-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+    background: var(--surface2);
+    transition: background 0.2s;
+  }
+  .scan-option:checked + .scan-label .scan-icon {
+    background: rgba(37,99,235,0.1);
+  }
+  .scan-name {
+    font-size: 0.82rem; font-weight: 600; color: var(--text-2);
+    text-align: center; line-height: 1.3;
+  }
+  .scan-option:checked + .scan-label .scan-name { color: var(--accent); }
+  .scan-desc {
+    font-size: 0.68rem; color: var(--text-3); text-align: center;
+  }
+
+  /* ─── UPLOAD ZONE ─── */
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius-sm);
+    padding: 2.5rem 1.5rem;
+    text-align: center; cursor: pointer;
+    transition: all 0.25s ease;
+    background: var(--surface2);
+    position: relative;
+  }
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--accent);
+    background: var(--accent-light);
+  }
+  .upload-zone input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .upload-icon-wrap {
+    width: 60px; height: 60px; margin: 0 auto 1rem;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow-sm);
+  }
+  .upload-title { font-size: 1rem; font-weight: 600; margin-bottom: 0.3rem; }
+  .upload-sub { font-size: 0.82rem; color: var(--text-3); }
+  .upload-formats {
+    display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 1rem;
+  }
+  .format-tag {
+    font-size: 0.68rem; font-weight: 600; letter-spacing: 0.04em;
+    padding: 3px 9px; border-radius: 20px;
+    background: var(--surface); border: 1px solid var(--border); color: var(--text-3);
+  }
+
+  /* ─── FILE PREVIEW ─── */
+  .file-preview {
+    display: none; margin-top: 1rem;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 1rem;
+    align-items: center; gap: 12px;
+  }
+  .file-preview.show { display: flex; }
+  .file-thumb {
+    width: 56px; height: 56px; border-radius: 8px;
+    object-fit: cover; flex-shrink: 0;
+    border: 1px solid var(--border); background: var(--surface2);
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
+  }
+  .file-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .file-info { flex: 1; min-width: 0; }
+  .file-name { font-size: 0.88rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; }
+  .file-size { font-size: 0.75rem; color: var(--text-3); }
+  .file-remove {
+    width: 28px; height: 28px; border: none; cursor: pointer;
+    background: var(--surface2); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-3); font-size: 0.8rem; flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  .file-remove:hover { background: #fee2e2; color: var(--danger); }
+
+  /* ─── ADDITIONAL NOTES ─── */
+  .notes-textarea {
+    width: 100%; padding: 0.9rem 1rem;
+    border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif; font-size: 0.9rem;
+    color: var(--text); background: var(--surface2);
+    resize: vertical; min-height: 90px;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+  .notes-textarea:focus { border-color: var(--accent); background: #fff; }
+  .notes-textarea::placeholder { color: var(--text-3); }
+
+  /* ─── ANALYZE BTN ─── */
+  .btn-row {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 1rem;
+  }
+  .btn-hint { font-size: 0.8rem; color: var(--text-3); display: flex; align-items: center; gap: 6px; }
+  .btn-analyze {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 0.9rem 2rem;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+    color: #fff; border: none; border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 600;
+    cursor: pointer; transition: all 0.2s ease;
+    box-shadow: 0 4px 14px rgba(37,99,235,0.35);
+    position: relative; overflow: hidden;
+    min-width: 180px; justify-content: center;
+  }
+  .btn-analyze::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .btn-analyze:hover::before { opacity: 1; }
+  .btn-analyze:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(37,99,235,0.4); }
+  .btn-analyze:active { transform: translateY(0); }
+  .btn-analyze:disabled {
+    opacity: 0.5; cursor: not-allowed; transform: none;
+    box-shadow: none;
+  }
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2.5px solid rgba(255,255,255,0.35);
+    border-top-color: #fff; border-radius: 50%;
+    animation: spin 0.8s linear infinite; display: none;
+  }
+  .btn-analyze.loading .spinner { display: block; }
+  .btn-analyze.loading .btn-text { opacity: 0.7; }
+
+  /* ─── RESULT PANEL ─── */
+  #result-panel {
+    display: none;
+    animation: fadeUp 0.5s ease both;
+  }
+  #result-panel.show { display: block; }
+
+  .result-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 1rem; flex-wrap: wrap;
+    padding: 1.75rem 2rem 1.25rem;
+    background: linear-gradient(135deg, #f0f4ff 0%, #e8f3ff 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  .result-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--success);
+    background: #ecfdf5; border: 1px solid #a7f3d0;
+    padding: 3px 10px; border-radius: 20px; margin-bottom: 0.5rem;
+  }
+  .result-badge::before { content: '✓'; }
+  .result-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.4rem; letter-spacing: -0.01em;
+  }
+  .result-meta { font-size: 0.8rem; color: var(--text-3); margin-top: 2px; }
+  .result-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .btn-icon {
+    width: 36px; height: 36px; border: 1.5px solid var(--border);
+    background: var(--surface); border-radius: 8px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem; color: var(--text-2); transition: all 0.15s;
+  }
+  .btn-icon:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+  .result-body { padding: 2rem; }
+
+  /* Disclaimer */
+  .disclaimer {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: #fffbeb; border: 1px solid #fde68a;
+    border-radius: 10px; padding: 0.9rem 1rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.8rem; color: #92400e; line-height: 1.5;
+  }
+  .disclaimer-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+
+  /* Analysis blocks */
+  .analysis-content h2 {
+    font-size: 1.05rem; font-weight: 700; color: var(--text);
+    margin: 1.5rem 0 0.6rem; padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .analysis-content h2:first-child { margin-top: 0; }
+  .analysis-content h3 {
+    font-size: 0.92rem; font-weight: 600; color: var(--text-2);
+    margin: 1rem 0 0.4rem;
+  }
+  .analysis-content p {
+    font-size: 0.9rem; color: var(--text-2); margin-bottom: 0.6rem; line-height: 1.7;
+  }
+  .analysis-content ul, .analysis-content ol {
+    padding-left: 1.25rem; margin-bottom: 0.8rem;
+  }
+  .analysis-content li {
+    font-size: 0.88rem; color: var(--text-2); margin-bottom: 0.35rem; line-height: 1.65;
+  }
+  .analysis-content strong { color: var(--text); font-weight: 600; }
+  .analysis-content em { color: var(--accent); font-style: normal; font-weight: 500; }
+
+  /* Finding cards */
+  .finding-card {
+    border: 1px solid var(--border); border-radius: 10px;
+    padding: 1rem 1.1rem; margin-bottom: 0.75rem;
+    background: var(--surface); transition: box-shadow 0.15s;
+  }
+  .finding-card:hover { box-shadow: var(--shadow-sm); }
+  .finding-card.normal { border-left: 3px solid var(--success); }
+  .finding-card.abnormal { border-left: 3px solid var(--danger); }
+  .finding-card.caution { border-left: 3px solid var(--warning); }
+
+  /* Loading states */
+  .skeleton {
+    background: linear-gradient(90deg, var(--surface2) 25%, #e8ecf4 50%, var(--surface2) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 6px;
+    height: 14px; margin-bottom: 8px;
+  }
+  .skeleton.wide { width: 100%; }
+  .skeleton.medium { width: 75%; }
+  .skeleton.short { width: 50%; }
+  .skeleton.tall { height: 20px; }
+
+  #loading-skeleton { display: none; }
+  #loading-skeleton.show { display: block; }
+  #analysis-output { display: none; }
+  #analysis-output.show { display: block; }
+
+  /* Error */
+  .error-box {
+    background: #fef2f2; border: 1px solid #fca5a5;
+    border-radius: 10px; padding: 1rem 1.1rem;
+    font-size: 0.88rem; color: #991b1b;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+
+  /* Animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.4; }
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center; padding: 2rem;
+    font-size: 0.78rem; color: var(--text-3);
+    border-top: 1px solid var(--border);
+  }
+  .footer a { color: var(--accent); text-decoration: none; }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .scan-grid { grid-template-columns: repeat(3, 1fr); }
+    .card-section { padding: 1.25rem; }
+    .result-header { padding: 1.25rem; }
+    .result-body { padding: 1.25rem; }
+    .btn-row { flex-direction: column-reverse; align-items: stretch; }
+    .btn-analyze { width: 100%; }
+    nav { padding: 0 1rem; }
+    .hero { padding: 2.5rem 1rem 2rem; }
+    .main-container { padding: 0 0.75rem 4rem; }
+  }
+  @media (max-width: 400px) {
+    .scan-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* Print */
+  @media print {
+    nav, .card-section:not(#result-panel .card-section), #result-panel .result-actions { display: none !important; }
+    #result-panel { display: block !important; }
+    body { background: #fff; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-brand" href="#">
+    <div class="nav-logo">
+      <svg fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+      </svg>
+    </div>
+    <span class="nav-title">Intelligent <span>Healthcare</span></span>
+  </a>
+ 
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-eyebrow">AI Diagnostic Assistant</div>
+  <h1>Instant <em>Medical Report</em><br>Analysis</h1>
+  <p class="hero-sub">Upload any lab report, scan, or medical image and get a detailed AI-powered analysis in seconds.</p>
+</div>
+
+<!-- MAIN -->
+<div class="main-container">
+  <div class="card">
+
+    <!-- STEP 1: SCAN TYPE -->
+    <div class="card-section">
+      <div class="section-label"><span class="section-num">1</span>Select Report Type</div>
+      <div class="scan-grid">
+
+        <div>
+          <input type="radio" name="scan-type" id="type-blood" value="Blood Test" class="scan-option">
+          <label for="type-blood" class="scan-label">
+            <div class="scan-icon">🩸</div>
+            <div>
+              <div class="scan-name">Blood Test</div>
+              <div class="scan-desc">CBC, lipids, glucose</div>
+            </div>
+          </label>
+        </div>
+
+        <div>
+          <input type="radio" name="scan-type" id="type-ct" value="CT Scan" class="scan-option">
+          <label for="type-ct" class="scan-label">
+            <div class="scan-icon">🫁</div>
+            <div>
+              <div class="scan-name">CT Scan</div>
+              <div class="scan-desc">Computed tomography</div>
+            </div>
+          </label>
+        </div>
+
+        <div>
+          <input type="radio" name="scan-type" id="type-ecg" value="ECG / EKG" class="scan-option">
+          <label for="type-ecg" class="scan-label">
+            <div class="scan-icon">💓</div>
+            <div>
+              <div class="scan-name">ECG / EKG</div>
+              <div class="scan-desc">Heart rhythm strip</div>
+            </div>
+          </label>
+        </div>
+
+        <div>
+          <input type="radio" name="scan-type" id="type-mri" value="MRI" class="scan-option">
+          <label for="type-mri" class="scan-label">
+            <div class="scan-icon">🧠</div>
+            <div>
+              <div class="scan-name">MRI</div>
+              <div class="scan-desc">Magnetic resonance</div>
+            </div>
+          </label>
+        </div>
+
+        <div>
+          <input type="radio" name="scan-type" id="type-xray" value="X-Ray" class="scan-option">
+          <label for="type-xray" class="scan-label">
+            <div class="scan-icon">🦴</div>
+            <div>
+              <div class="scan-name">X-Ray</div>
+              <div class="scan-desc">Radiograph image</div>
+            </div>
+          </label>
+        </div>
+
+        <div>
+          <input type="radio" name="scan-type" id="type-other" value="General Medical Report" class="scan-option">
+          <label for="type-other" class="scan-label">
+            <div class="scan-icon">📋</div>
+            <div>
+              <div class="scan-name">Other</div>
+              <div class="scan-desc">Any medical report</div>
+            </div>
+          </label>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- STEP 2: UPLOAD -->
+    <div class="card-section">
+      <div class="section-label"><span class="section-num">2</span>Upload File</div>
+      <div class="upload-zone" id="upload-zone">
+        <input type="file" id="file-input" accept="image/*,.pdf">
+        <div class="upload-icon-wrap">
+          <svg width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="#94a3b8" stroke-width="1.8">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
+          </svg>
+        </div>
+        <div class="upload-title">Drop your file here, or click to browse</div>
+        <div class="upload-sub">Images and PDF reports accepted</div>
+        <div class="upload-formats">
+          <span class="format-tag">JPG</span>
+          <span class="format-tag">PNG</span>
+          <span class="format-tag">WEBP</span>
+          <span class="format-tag">HEIC</span>
+          <span class="format-tag">PDF</span>
+          <span class="format-tag">TIFF</span>
+        </div>
+      </div>
+
+      <div class="file-preview" id="file-preview">
+        <div class="file-thumb" id="file-thumb">
+          <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="#94a3b8" stroke-width="1.8">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+          </svg>
+        </div>
+        <div class="file-info">
+          <div class="file-name" id="file-name">—</div>
+          <div class="file-size" id="file-size">—</div>
+        </div>
+        <button class="file-remove" id="file-remove" title="Remove file">✕</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: NOTES -->
+    <div class="card-section">
+      <div class="section-label"><span class="section-num">3</span>Clinical Notes <span style="font-weight:400;color:var(--text-3);margin-left:4px;">(optional)</span></div>
+      <textarea
+        class="notes-textarea"
+        id="clinical-notes"
+        placeholder="Add any relevant symptoms, patient age, medications, or specific areas of concern for more targeted analysis…"></textarea>
+    </div>
+
+    <!-- STEP 4: ANALYZE -->
+    <div class="card-section">
+      <div class="btn-row">
+        <div class="btn-hint">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
+          </svg>
+          Analyzed securely via AI Diagnostic Engine
+        </div>
+        <button class="btn-analyze" id="analyze-btn" disabled>
+          <div class="spinner" id="spinner"></div>
+          <svg id="btn-icon-svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
+          </svg>
+          <span class="btn-text">Analyse Report</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- RESULT PANEL -->
+    <div id="result-panel">
+      <div class="card-section" style="padding:0; border-bottom:none;">
+
+        <div class="result-header">
+          <div class="result-title-group">
+            <div class="result-badge">Analysis Complete</div>
+            <div class="result-title" id="result-title">Report Analysis</div>
+            <div class="result-meta" id="result-meta">Generated just now</div>
+          </div>
+          <div class="result-actions">
+            <button class="btn-icon" title="Print report" onclick="window.print()">🖨</button>
+            <button class="btn-icon" title="Copy analysis" id="copy-btn">📋</button>
+            <button class="btn-icon" title="New analysis" id="reset-btn">↺</button>
+          </div>
+        </div>
+
+        <div class="result-body">
+          <div class="disclaimer">
+            <div class="disclaimer-icon">⚠️</div>
+            <div><strong>Medical Disclaimer:</strong> This AI analysis is for educational and informational purposes only. It is not a substitute for professional medical advice, diagnosis, or treatment. Always consult a qualified healthcare provider.</div>
+          </div>
+
+          <!-- Skeleton loader -->
+          <div id="loading-skeleton">
+            <div class="skeleton tall wide" style="margin-bottom:16px;width:40%"></div>
+            <div class="skeleton wide"></div>
+            <div class="skeleton medium"></div>
+            <div class="skeleton wide"></div>
+            <div class="skeleton short" style="margin-bottom:20px"></div>
+            <div class="skeleton tall wide" style="margin-bottom:16px;width:35%"></div>
+            <div class="skeleton wide"></div>
+            <div class="skeleton wide"></div>
+            <div class="skeleton medium" style="margin-bottom:20px"></div>
+            <div class="skeleton tall wide" style="margin-bottom:16px;width:45%"></div>
+            <div class="skeleton wide"></div>
+            <div class="skeleton medium"></div>
+          </div>
+
+          <!-- Real output -->
+          <div class="analysis-content" id="analysis-output"></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- .card -->
+</div><!-- .main-container -->
+
+<div class="footer">
+  Intelligent Healthcare &mdash; For informational use only &middot; <a href="#">Privacy</a> &middot; <a href="#">Terms</a>
+</div>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────
+const GEMINI_API_KEY = "AIzaSyBLpkrraEmNB-9iNMIpcqyK0tKQqyrdqXs"; // ← Replace with your key
+const GEMINI_MODEL   = "gemini-2.5-flash";
+const GEMINI_URL     = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+
+// ─── STATE ────────────────────────────────────────────────
+let selectedFile   = null;
+let fileBase64     = null;
+let fileMimeType   = null;
+let lastAnalysis   = "";
+
+// ─── ELEMENTS ─────────────────────────────────────────────
+const fileInput   = document.getElementById("file-input");
+const uploadZone  = document.getElementById("upload-zone");
+const filePreview = document.getElementById("file-preview");
+const fileThumb   = document.getElementById("file-thumb");
+const fileName    = document.getElementById("file-name");
+const fileSize    = document.getElementById("file-size");
+const fileRemove  = document.getElementById("file-remove");
+const analyzeBtn  = document.getElementById("analyze-btn");
+const resultPanel = document.getElementById("result-panel");
+const loadingSkel = document.getElementById("loading-skeleton");
+const analysisOut = document.getElementById("analysis-output");
+const spinner     = document.getElementById("spinner");
+const btnIconSvg  = document.getElementById("btn-icon-svg");
+const btnText     = document.querySelector(".btn-text");
+const copyBtn     = document.getElementById("copy-btn");
+const resetBtn    = document.getElementById("reset-btn");
+
+// ─── HELPERS ──────────────────────────────────────────────
+function formatBytes(b) {
+  if (b < 1024) return b + " B";
+  if (b < 1024*1024) return (b/1024).toFixed(1) + " KB";
+  return (b/1024/1024).toFixed(1) + " MB";
+}
+
+function getSelectedScanType() {
+  const sel = document.querySelector('input[name="scan-type"]:checked');
+  return sel ? sel.value : null;
+}
+
+function checkReady() {
+  const ready = selectedFile && getSelectedScanType();
+  analyzeBtn.disabled = !ready;
+}
+
+function toBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload  = () => res(r.result.split(",")[1]);
+    r.onerror = () => rej(new Error("File read failed"));
+    r.readAsDataURL(file);
+  });
+}
+
+function setFile(file) {
+  selectedFile = file;
+  fileMimeType = file.type || "application/octet-stream";
+
+  fileName.textContent = file.name;
+  fileSize.textContent = formatBytes(file.size);
+
+  // Thumbnail
+  fileThumb.innerHTML = "";
+  if (file.type.startsWith("image/")) {
+    const img = document.createElement("img");
+    img.src = URL.createObjectURL(file);
+    fileThumb.appendChild(img);
+  } else {
+    fileThumb.innerHTML = `<svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="#ef4444" stroke-width="1.8">
+      <path stroke-linecap="round" stroke-linejoin="round"
+        d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+    </svg>`;
+  }
+
+  filePreview.classList.add("show");
+  toBase64(file).then(b64 => { fileBase64 = b64; });
+  checkReady();
+}
+
+function clearFile() {
+  selectedFile = null; fileBase64 = null; fileMimeType = null;
+  fileInput.value = "";
+  filePreview.classList.remove("show");
+  checkReady();
+}
+
+// ─── FILE EVENTS ──────────────────────────────────────────
+fileInput.addEventListener("change", e => {
+  if (e.target.files[0]) setFile(e.target.files[0]);
+});
+fileRemove.addEventListener("click", clearFile);
+
+uploadZone.addEventListener("dragover", e => { e.preventDefault(); uploadZone.classList.add("drag-over"); });
+uploadZone.addEventListener("dragleave", () => uploadZone.classList.remove("drag-over"));
+uploadZone.addEventListener("drop", e => {
+  e.preventDefault(); uploadZone.classList.remove("drag-over");
+  if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
+});
+
+document.querySelectorAll('input[name="scan-type"]').forEach(r => r.addEventListener("change", checkReady));
+
+// ─── PROMPT BUILDER ───────────────────────────────────────
+function buildPrompt(scanType, notes) {
+  const notePart = notes.trim()
+    ? `\n\nAdditional clinical context provided by user:\n${notes.trim()}`
+    : "";
+
+  return `You are an expert AI medical analyst specializing in interpreting ${scanType} reports and images.
+
+Analyze the provided ${scanType} report/image thoroughly and produce a comprehensive, structured analysis. Use the following exact section structure:
+
+## 🔍 Report Overview
+Briefly describe what type of report/image this is and its quality.
+
+## 📊 Key Findings — Point by Point
+List every significant finding. Use this format for each:
+- **Finding name**: Description | Status: [Normal / Abnormal / Borderline]
+
+## ✅ Normal Parameters
+List all values or observations that fall within normal/expected ranges.
+
+## ⚠️ Abnormal or Concerning Findings
+List all values or observations outside normal range. For each:
+- **Parameter**: Observed value → Normal range → Clinical significance
+
+## 🧬 Detailed Clinical Interpretation
+Provide a thorough paragraph-by-paragraph explanation of what the findings mean medically. Explain the pathophysiology where relevant.
+
+## 🩺 Possible Diagnoses / Differential Diagnoses
+List possible conditions indicated by the findings (ranked by likelihood):
+1. Most likely: ...
+2. Possible: ...
+3. Less likely: ...
+
+## 💊 Recommended Follow-Up Actions
+Provide specific, actionable recommendations:
+- Additional tests or imaging to consider
+- Specialist referrals
+- Lifestyle or medication considerations
+
+## 📈 Severity Assessment
+Rate the overall urgency: **Routine** / **Monitor** / **Urgent** / **Emergency**  
+Explain the rating.
+
+## 📝 Summary for Patient
+Write a simple, jargon-free summary a patient can understand (3–5 sentences).
+
+---
+Be thorough, precise, and complete. Do not skip any section. Format using markdown with bold text, bullet points, and numbered lists as specified.${notePart}`;
+}
+
+// ─── MARKDOWN RENDERER ────────────────────────────────────
+function renderMarkdown(md) {
+  return md
+    // Headers
+    .replace(/^## (.+)$/gm, (_, t) => `<h2>${t}</h2>`)
+    .replace(/^### (.+)$/gm, (_, t) => `<h3>${t}</h3>`)
+    // Bold
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    // Italic / em
+    .replace(/\*(.+?)\*/g, "<em>$1</em>")
+    // Ordered lists (handle multi-digit)
+    .replace(/^\d+\. (.+)$/gm, "<li>$1</li>")
+    // Unordered lists
+    .replace(/^- (.+)$/gm, "<li>$1</li>")
+    // Wrap consecutive <li> in <ul>
+    .replace(/(<li>[\s\S]+?<\/li>\n?)+/g, m => `<ul>${m}</ul>`)
+    // Horizontal rule
+    .replace(/^---+$/gm, "<hr style='border:none;border-top:1px solid var(--border);margin:1.5rem 0;'>")
+    // Paragraphs
+    .replace(/\n\n(?!<)/g, "</p><p>")
+    .replace(/^(?!<)(.+)$/gm, (line) =>
+      line.trim() && !line.startsWith("<") ? `<p>${line}</p>` : line
+    )
+    // Cleanup
+    .replace(/<p><\/p>/g, "")
+    .replace(/<p>(<[uh][l2r])/g, "$1")
+    .replace(/(<\/[uh][l]>)<\/p>/g, "$1");
+}
+
+// ─── ANALYSE ──────────────────────────────────────────────
+analyzeBtn.addEventListener("click", async () => {
+  const scanType = getSelectedScanType();
+  if (!scanType || !selectedFile || !fileBase64) return;
+
+  const notes = document.getElementById("clinical-notes").value;
+
+  // UI → loading
+  analyzeBtn.disabled = true;
+  analyzeBtn.classList.add("loading");
+  btnIconSvg.style.display = "none";
+  btnText.textContent = "Analysing…";
+
+  resultPanel.classList.add("show");
+  document.getElementById("result-title").textContent = `${scanType} Analysis`;
+  document.getElementById("result-meta").textContent =
+    `${selectedFile.name} · ${formatBytes(selectedFile.size)} · ${new Date().toLocaleString()}`;
+
+  loadingSkel.classList.add("show");
+  analysisOut.classList.remove("show");
+  analysisOut.innerHTML = "";
+
+  resultPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  try {
+    const prompt = buildPrompt(scanType, notes);
+
+    const parts = [
+      { text: prompt },
+      {
+        inline_data: {
+          mime_type: fileMimeType,
+          data: fileBase64
+        }
+      }
+    ];
+
+    const response = await fetch(GEMINI_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts }],
+        generationConfig: {
+          temperature: 0.3,
+          topK: 40,
+          topP: 0.9,
+          maxOutputTokens: 8192,
+        }
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err?.error?.message || `API error ${response.status}`);
+    }
+
+    const data = await response.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+    if (!text) throw new Error("No analysis returned from Gemini.");
+
+    lastAnalysis = text;
+    const html = renderMarkdown(text);
+
+    loadingSkel.classList.remove("show");
+    analysisOut.innerHTML = html;
+    analysisOut.classList.add("show");
+
+  } catch (err) {
+    loadingSkel.classList.remove("show");
+    analysisOut.innerHTML = `
+      <div class="error-box">
+        <div style="font-size:1.2rem">⚠️</div>
+        <div>
+          <strong>Analysis Failed</strong><br>
+          ${err.message || "An unexpected error occurred. Please check your API key and try again."}
+        </div>
+      </div>`;
+    analysisOut.classList.add("show");
+  } finally {
+    analyzeBtn.disabled = false;
+    analyzeBtn.classList.remove("loading");
+    btnIconSvg.style.display = "";
+    btnText.textContent = "Analyse Report";
+  }
+});
+
+// ─── COPY ─────────────────────────────────────────────────
+copyBtn.addEventListener("click", () => {
+  if (!lastAnalysis) return;
+  navigator.clipboard.writeText(lastAnalysis).then(() => {
+    copyBtn.textContent = "✓";
+    setTimeout(() => { copyBtn.textContent = "📋"; }, 2000);
+  });
+});
+
+// ─── RESET ────────────────────────────────────────────────
+resetBtn.addEventListener("click", () => {
+  resultPanel.classList.remove("show");
+  lastAnalysis = "";
+  analysisOut.innerHTML = "";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+</script>
+</body>
+</html>

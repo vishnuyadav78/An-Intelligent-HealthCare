@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>MediVision AI – AI Health Diagnosis using Image & Text</title>
+
+<style>
+
+*{
+box-sizing:border-box;
+margin:0;
+padding:0;
+font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+}
+
+body{
+background:#eef2f8;
+display:flex;
+justify-content:center;
+padding:20px;
+}
+
+.container{
+width:100%;
+max-width:760px;
+background:white;
+padding:32px;
+border-radius:14px;
+box-shadow:0 15px 40px rgba(0,0,0,0.08);
+}
+
+h1{
+text-align:center;
+font-size:26px;
+margin-bottom:6px;
+color:#1b2b44;
+}
+
+.subtitle{
+text-align:center;
+color:#6b7280;
+margin-bottom:28px;
+font-size:15px;
+}
+
+label{
+font-weight:600;
+font-size:14px;
+color:#374151;
+}
+
+textarea{
+width:100%;
+height:120px;
+margin-top:8px;
+padding:12px;
+border-radius:8px;
+border:1px solid #d1d5db;
+font-size:15px;
+resize:none;
+}
+
+textarea:focus{
+outline:none;
+border-color:#2b7cff;
+}
+
+input,select{
+width:100%;
+padding:12px;
+margin-top:15px;
+border-radius:8px;
+border:1px solid #d1d5db;
+}
+
+.preview{
+margin-top:12px;
+text-align:center;
+}
+
+.preview img{
+max-width:160px;
+border-radius:8px;
+box-shadow:0 4px 10px rgba(0,0,0,0.1);
+}
+
+button{
+width:100%;
+margin-top:22px;
+padding:13px;
+border:none;
+background:#2b7cff;
+color:white;
+font-size:16px;
+border-radius:8px;
+cursor:pointer;
+transition:0.2s;
+}
+
+button:hover{
+background:#1f63d6;
+}
+
+.result{
+margin-top:28px;
+padding:20px;
+background:#f5f8ff;
+border-radius:10px;
+line-height:1.7;
+font-size:15px;
+}
+
+.result strong{
+color:#1f4ed8;
+}
+
+.loading{
+text-align:center;
+padding:20px;
+font-weight:500;
+color:#374151;
+}
+
+.disclaimer{
+margin-top:22px;
+font-size:12px;
+color:#6b7280;
+text-align:center;
+}
+
+#mainApp{
+display:none;
+}
+
+@media(max-width:600px){
+
+.container{
+padding:22px;
+}
+
+h1{
+font-size:22px;
+}
+
+textarea{
+height:100px;
+}
+
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- USER FORM -->
+
+<div class="container" id="userForm">
+
+<h1>Welcome to MediVision AI</h1>
+<p class="subtitle">Enter your details to continue</p>
+
+<input id="name" placeholder="Enter your name">
+<input id="age" type="number" placeholder="Enter your age">
+
+<select id="gender">
+<option value="">Select Gender</option>
+<option>Male</option>
+<option>Female</option>
+<option>Other</option>
+</select>
+
+<input id="location" placeholder="Enter your location">
+
+<button onclick="saveUser()">Proceed</button>
+
+</div>
+
+<!-- MAIN APP -->
+
+<div class="container" id="mainApp">
+
+<h1>🩺 MediVision AI – AI Health Diagnosis using Image & Text</h1>
+
+<p class="subtitle">
+Enter symptoms and upload a medical image for AI-powered health analysis
+</p>
+
+<label>Describe Symptoms</label>
+
+<textarea id="symptoms" placeholder="Example: My eyes appear yellow and I feel extremely tired with mild fever..."></textarea>
+
+<input type="file" id="imageInput" onchange="previewImage()">
+
+<div class="preview" id="preview"></div>
+
+<button onclick="predictDisease()">Analyze Health</button>
+
+<div id="result"></div>
+
+<button onclick="downloadPDF()">Download Report as PDF</button>
+
+<p class="disclaimer">
+⚠️ MediVision AI provides general health insights and does not replace professional medical diagnosis.
+</p>
+
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<!-- jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+
+/* FIREBASE CONFIG */
+
+const firebaseConfig={
+apiKey:"AIzaSyDgZjOFKQosy64nOtOwZaWGD8gSe7eX5NY",
+authDomain:"first-1fbe1.firebaseapp.com",
+databaseURL:"https://first-1fbe1-default-rtdb.firebaseio.com",
+projectId:"first-1fbe1",
+storageBucket:"first-1fbe1.firebasestorage.app",
+messagingSenderId:"392953345039",
+appId:"1:392953345039:web:aa36154e3e3635a94a9f7a"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db=firebase.database();
+
+/* SAVE USER */
+
+function saveUser(){
+
+let name=document.getElementById("name").value;
+let age=document.getElementById("age").value;
+let gender=document.getElementById("gender").value;
+let location=document.getElementById("location").value;
+
+if(!name||!age||!gender||!location){
+alert("Please fill all fields");
+return;
+}
+
+let id=Date.now();
+
+db.ref("users/"+id).set({
+name:name,
+age:age,
+gender:gender,
+location:location,
+time:new Date().toLocaleString()
+});
+
+/* store for pdf */
+
+localStorage.setItem("patientName",name);
+localStorage.setItem("patientAge",age);
+localStorage.setItem("patientGender",gender);
+localStorage.setItem("patientLocation",location);
+
+document.getElementById("userForm").style.display="none";
+document.getElementById("mainApp").style.display="block";
+
+}
+
+/* IMAGE PREVIEW */
+
+function previewImage(){
+
+let file=document.getElementById("imageInput").files[0];
+let preview=document.getElementById("preview");
+
+if(!file)return;
+
+let reader=new FileReader();
+
+reader.onload=function(){
+preview.innerHTML=`<img src="${reader.result}">`;
+}
+
+reader.readAsDataURL(file);
+
+}
+
+/* GEMINI API */
+
+const API_KEY="AIzaSyAMJ0S4aVyoDROfUzkKU4X6fjWV6LLzLB0";
+
+async function predictDisease(){
+
+let symptoms=document.getElementById("symptoms").value;
+let imageFile=document.getElementById("imageInput").files[0];
+let resultDiv=document.getElementById("result");
+
+if(!symptoms){
+alert("Please describe your symptoms.");
+return;
+}
+
+if(!imageFile){
+alert("Please upload a medical image.");
+return;
+}
+
+let reader=new FileReader();
+
+reader.onload=async function(){
+
+try{
+
+resultDiv.innerHTML=`<div class="loading">⏳ MediVision AI is analyzing your medical information...</div>`;
+
+let base64Image=reader.result.split(",")[1];
+
+let response=await fetch(
+`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,
+{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+contents:[{
+parts:[
+{
+text:`A user described symptoms and uploaded a medical image.
+
+Symptoms:
+${symptoms}
+
+Provide a professional medical style response.
+
+Format strictly like this:
+
+Possible Condition:
+(short explanation)
+
+Risk Level:
+(Low / Moderate / High)
+
+Recommended Medicines:
+(list common OTC medicines)
+
+Precautions:
+(bullet points)
+
+Doctor Advice:
+(when to consult doctor)
+
+Emergency Warning:
+(if urgent care needed)
+
+Keep the response concise and structured.`
+},
+{
+inline_data:{
+mime_type:imageFile.type,
+data:base64Image
+}
+}
+]
+}]
+})
+});
+
+let data=await response.json();
+
+if(data.candidates){
+
+let text=data.candidates[0].content.parts[0].text;
+
+let formatted=text
+.replace("Possible Condition:","<strong>Possible Condition:</strong>")
+.replace("Risk Level:","<strong>Risk Level:</strong>")
+.replace("Recommended Medicines:","<strong>Recommended Medicines:</strong>")
+.replace("Precautions:","<strong>Precautions:</strong>")
+.replace("Doctor Advice:","<strong>Doctor Advice:</strong>")
+.replace("Emergency Warning:","<strong>Emergency Warning:</strong>")
+.replace(/\n/g,"<br>");
+
+resultDiv.innerHTML=`<div class="result">${formatted}</div>`;
+
+}else{
+
+resultDiv.innerHTML="⚠️ Unable to retrieve AI response.";
+
+}
+
+}catch(error){
+
+resultDiv.innerHTML="⚠️ "+error;
+
+}
+
+};
+
+reader.readAsDataURL(imageFile);
+
+}
+
+/* DOWNLOAD PDF */
+
+function downloadPDF(){
+
+const { jsPDF } = window.jspdf;
+
+let doc = new jsPDF();
+
+const pageWidth = doc.internal.pageSize.getWidth();
+const pageHeight = doc.internal.pageSize.getHeight();
+
+let y = 20;
+
+/* PATIENT DATA */
+
+let name = localStorage.getItem("patientName");
+let age = localStorage.getItem("patientAge");
+let gender = localStorage.getItem("patientGender");
+let location = localStorage.getItem("patientLocation");
+
+let result = document.getElementById("result").innerText;
+
+/* DATE FORMAT */
+
+let today = new Date();
+let options = {day:'2-digit',month:'short',year:'numeric'};
+let date = today.toLocaleDateString('en-GB',options);
+
+/* TITLE */
+
+doc.setFont("helvetica","bold");
+doc.setFontSize(16);
+
+doc.text("MediVision AI – AI Health Diagnosis using Image & Text",pageWidth/2,y,{align:"center"});
+
+y += 10;
+
+doc.line(20,y,pageWidth-20,y);
+
+y += 12;
+
+/* PATIENT DETAILS */
+
+doc.setFontSize(13);
+doc.setFont("helvetica","bold");
+doc.text("Patient Details",20,y);
+
+y += 10;
+
+doc.setFontSize(11);
+
+doc.setFont("helvetica","bold");
+doc.text("Name:",20,y);
+doc.setFont("helvetica","normal");
+doc.text(name,50,y);
+y+=8;
+
+doc.setFont("helvetica","bold");
+doc.text("Age:",20,y);
+doc.setFont("helvetica","normal");
+doc.text(age,50,y);
+y+=8;
+
+doc.setFont("helvetica","bold");
+doc.text("Gender:",20,y);
+doc.setFont("helvetica","normal");
+doc.text(gender,50,y);
+y+=8;
+
+doc.setFont("helvetica","bold");
+doc.text("Location:",20,y);
+doc.setFont("helvetica","normal");
+doc.text(location,50,y);
+y+=8;
+
+doc.setFont("helvetica","bold");
+doc.text("Time:",20,y);
+doc.setFont("helvetica","normal");
+doc.text(date,50,y);
+
+y += 12;
+
+doc.line(20,y,pageWidth-20,y);
+
+y += 12;
+
+/* DISEASE ANALYSIS TITLE */
+
+doc.setFont("helvetica","bold");
+doc.setFontSize(13);
+
+doc.text("Disease Analysis",20,y);
+
+y += 10;
+
+/* FORMAT AI TEXT */
+
+let sections=[
+"Possible Condition:",
+"Risk Level:",
+"Recommended Medicines:",
+"Precautions:",
+"Doctor Advice:",
+"Emergency Warning:"
+];
+
+let lines=result.split("\n");
+
+doc.setFontSize(11);
+
+lines.forEach(line=>{
+
+/* PAGE BREAK */
+
+if(y>pageHeight-30){
+doc.addPage();
+y=20;
+}
+
+/* BOLD SECTION TITLES */
+
+if(sections.some(sec=>line.includes(sec))){
+
+doc.setFont("helvetica","bold");
+
+}else{
+
+doc.setFont("helvetica","normal");
+
+}
+
+/* WRAP TEXT */
+
+let wrapped=doc.splitTextToSize(line,170);
+
+wrapped.forEach(w=>{
+
+if(y>pageHeight-30){
+doc.addPage();
+y=20;
+}
+
+doc.text(w,20,y);
+
+y+=7;
+
+});
+
+});
+
+/* SPACE BEFORE SIGNATURE */
+
+y+=10;
+
+if(y>pageHeight-40){
+doc.addPage();
+y=20;
+}
+
+/* SIGNATURE */
+
+doc.setFont("helvetica","bold");
+
+doc.text("Doctor Consultant Signature:",20,y);
+
+doc.setFont("helvetica","normal");
+
+doc.line(80,y,150,y);
+
+y+=15;
+
+/* DISCLAIMER */
+
+doc.setFontSize(10);
+
+let disclaimer="!!! MediVision AI provides general health insights and does not replace professional medical diagnosis.";
+
+let wrapDisc=doc.splitTextToSize(disclaimer,170);
+
+wrapDisc.forEach(line=>{
+doc.text(line,20,y);
+y+=6;
+});
+
+/* SAVE */
+
+doc.save("MediVision_AI_Report.pdf");
+
+}
+
+</script>
+
+</body>
+
+</html>

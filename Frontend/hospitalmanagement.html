@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>IntelliCare | AI Healthcare System</title>
+  <!-- Google Fonts + Font Awesome 6 (free) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, sans-serif;
+      background: linear-gradient(145deg, #f6f9fc 0%, #edf2f8 100%);
+      min-height: 100vh;
+      color: #1a2c3e;
+      line-height: 1.4;
+      scroll-behavior: smooth;
+    }
+
+    /* main container */
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    /* header / hero section */
+    .hero {
+      text-align: center;
+      margin-bottom: 3.5rem;
+      margin-top: 1rem;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.2rem, 6vw, 3.8rem);
+      font-weight: 800;
+      background: linear-gradient(135deg, #0B2F4E, #1C6E8F, #2A9D8F);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.75rem;
+      text-shadow: 0 2px 5px rgba(0,0,0,0.02);
+    }
+
+    .hero .ai-tagline {
+      font-size: clamp(1rem, 4vw, 1.35rem);
+      font-weight: 500;
+      color: #2c5f7a;
+      max-width: 780px;
+      margin: 0 auto;
+      background: rgba(255,255,255,0.65);
+      backdrop-filter: blur(2px);
+      display: inline-block;
+      padding: 0.5rem 1.8rem;
+      border-radius: 80px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+      letter-spacing: -0.2px;
+    }
+
+    .hero .badge-ai {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(42, 157, 143, 0.12);
+      backdrop-filter: blur(4px);
+      border-radius: 100px;
+      padding: 0.35rem 1rem;
+      margin-bottom: 1.25rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #1f6e6b;
+      border: 1px solid rgba(42,157,143,0.25);
+    }
+
+    .hero .badge-ai i {
+      font-size: 0.9rem;
+    }
+
+    /* grid widgets */
+    .widgets-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 2rem;
+      margin: 2rem 0 2rem;
+    }
+
+    /* card link styling (full clickable card) */
+    .card {
+      display: block;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(0px);
+      border-radius: 2rem;
+      padding: 2rem 1.5rem 1.8rem;
+      text-decoration: none;
+      color: #1e2f3f;
+      transition: all 0.35s cubic-bezier(0.2, 0, 0, 1);
+      box-shadow: 0 15px 35px -12px rgba(0, 32, 54, 0.12), 0 1px 2px rgba(0,0,0,0.02);
+      border: 1px solid rgba(255,255,255,0.5);
+      text-align: center;
+      cursor: pointer;
+      will-change: transform;
+    }
+
+    .card:hover {
+      transform: translateY(-8px);
+      background: #ffffff;
+      box-shadow: 0 28px 40px -18px rgba(0, 50, 70, 0.25), 0 1px 3px rgba(0,0,0,0.05);
+      border-color: rgba(42,157,143,0.3);
+    }
+
+    /* icon container */
+    .card-icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(145deg, #eef6fc, #e2edf5);
+      border-radius: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.3rem;
+      transition: all 0.25s;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.02), 0 8px 12px -8px rgba(0,0,0,0.1);
+    }
+
+    .card:hover .card-icon {
+      background: linear-gradient(135deg, #e0f0f8, #d2e9f2);
+      transform: scale(0.98);
+    }
+
+    .card-icon i {
+      font-size: 2.6rem;
+      color: #1f6e8c;
+      transition: transform 0.2s;
+    }
+
+    .card:hover .card-icon i {
+      transform: scale(1.02);
+      color: #0f5b77;
+    }
+
+    /* admin specific subtle accent (optional) */
+    .card[data-role="admin"] .card-icon i { color: #2c5282; }
+    .card[data-role="patient"] .card-icon i { color: #2b6e5e; }
+    .card[data-role="doctor"] .card-icon i { color: #1f6392; }
+    .card[data-role="lab"] .card-icon i { color: #9b6b43; }
+    /* new roles styling */
+    .card[data-role="bed"] .card-icon i { color: #2c6e5c; }
+    .card[data-role="pharma"] .card-icon i { color: #aa6f4c; }
+
+    .card h3 {
+      font-size: 1.7rem;
+      font-weight: 700;
+      margin-bottom: 0.7rem;
+      letter-spacing: -0.3px;
+      background: linear-gradient(120deg, #1a3448, #1f4d66);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+
+    .card p {
+      font-size: 0.95rem;
+      line-height: 1.45;
+      color: #4a627a;
+      font-weight: 500;
+      margin-top: 0.5rem;
+    }
+
+    /* additional micro interaction: focus ring */
+    .card:focus-visible {
+      outline: 3px solid #2a9d8f;
+      outline-offset: 2px;
+      border-radius: 2rem;
+      transform: scale(0.99);
+    }
+
+    /* info note / footer */
+    .info-footer {
+      text-align: center;
+      margin-top: 4rem;
+      padding-top: 1.8rem;
+      border-top: 1px solid rgba(0,0,0,0.05);
+      font-size: 0.85rem;
+      color: #5f7f9a;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1.5rem;
+    }
+
+    .info-footer i {
+      margin-right: 6px;
+      font-size: 0.8rem;
+      color: #3f8c7c;
+    }
+
+    .info-footer span {
+      background: rgba(0,0,0,0.02);
+      padding: 0.2rem 0.9rem;
+      border-radius: 40px;
+    }
+
+    /* responsive touches */
+    @media (max-width: 680px) {
+      .container {
+        padding: 1.5rem 1rem 3rem;
+      }
+      .widgets-grid {
+        gap: 1.3rem;
+      }
+      .card {
+        padding: 1.6rem 1rem 1.4rem;
+      }
+      .card-icon {
+        width: 68px;
+        height: 68px;
+      }
+      .card-icon i {
+        font-size: 2.2rem;
+      }
+      .card h3 {
+        font-size: 1.45rem;
+      }
+      .hero {
+        margin-bottom: 2rem;
+      }
+    }
+
+    /* very small devices: fine tune */
+    @media (max-width: 480px) {
+      .hero .ai-tagline {
+        padding: 0.4rem 1rem;
+        font-size: 0.9rem;
+      }
+      .card p {
+        font-size: 0.85rem;
+      }
+    }
+
+    /* subtle animated gradient background for body variation */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 10% 20%, rgba(156, 210, 210, 0.08) 0%, rgba(255,255,255,0) 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 2;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Top Heading Center: Intelligent Healthcare System + AI integration -->
+    <div class="hero">
+      <div class="badge-ai">
+        <i class="fas fa-microchip"></i>
+        <span>AI‑powered ecosystem - Hospital Management Portal</span>
+        <i class="fas fa-brain"></i>
+      </div>
+      <h1>An Intelligent Healthcare System</h1>
+      <div class="ai-tagline">
+        <i class="fas fa-robot" style="font-size: 0.9rem; margin-right: 6px;"></i> 
+        Integrating AI-Based Diagnostic & Patient Management Solution
+      </div>
+      <p style="margin-top: 1.4rem; font-size: 0.95rem; color: #3f6b84; max-width: 550px; margin-left: auto; margin-right: auto;">
+        Secure, intelligent, and unified digital care — choose your role to access the platform
+      </p>
+    </div>
+
+    <!-- Widget Grid: Admin, Patient, Doctor, Lab Technician + NEW: Bed Allotment, Pharmacist -->
+    <div class="widgets-grid">
+      <!-- Admin Login widget → redirect to login.html -->
+      <a href="login.html" class="card" data-role="admin" aria-label="Admin Login - redirect to login page">
+        <div class="card-icon">
+          <i class="fas fa-user-shield"></i>
+        </div>
+        <h3>Admin Login</h3>
+        <p>System administration · analytics · AI model oversight</p>
+        <p style="font-size: 0.8rem; margin-top: 12px; opacity: 0.7;"><i class="fas fa-arrow-right"></i> Secure access</p>
+      </a>
+
+      <!-- Patient widget → redirect to patient.html -->
+      <a href="patient.html" class="card" data-role="patient" aria-label="Patient Portal - redirect to patient dashboard">
+        <div class="card-icon">
+          <i class="fas fa-hospital-user"></i>
+        </div>
+        <h3>Patient Portal</h3>
+        <p>Health records · AI diagnostics · appointments & prescriptions</p>
+        <p style="font-size: 0.8rem; margin-top: 12px; opacity: 0.7;"><i class="fas fa-calendar-check"></i> Your health journey</p>
+      </a>
+
+      <!-- Doctor widget → redirect to doctor.html -->
+      <a href="doctor.html" class="card" data-role="doctor" aria-label="Doctor Dashboard - redirect to doctor panel">
+        <div class="card-icon">
+          <i class="fas fa-stethoscope"></i>
+        </div>
+        <h3>Doctor Portal</h3>
+        <p>Clinical workflows · AI-assisted diagnosis · patient management</p>
+        <p style="font-size: 0.8rem; margin-top: 12px; opacity: 0.7;"><i class="fas fa-chart-line"></i> Smart insights</p>
+      </a>
+
+      <!-- Lab Technician widget → redirect to lab.html -->
+      <a href="lab.html" class="card" data-role="lab" aria-label="Lab Technician workspace - redirect to lab portal">
+        <div class="card-icon">
+          <i class="fas fa-flask"></i>
+        </div>
+        <h3>Lab Technician</h3>
+        <p>Test results · digital pathology · AI-enhanced lab analytics</p>
+        <p style="font-size: 0.8rem; margin-top: 12px; opacity: 0.7;"><i class="fas fa-microscope"></i> Precision diagnostics</p>
+      </a>
+
+      <!-- NEW: Bed Allotment widget → redirect to bed.html -->
+      <a href="bed.html" class="card" data-role="bed" aria-label="Bed Allotment - manage bed assignments">
+        <div class="card-icon">
+          <i class="fas fa-bed"></i>
+        </div>
+        <h3>Bed Allotment</h3>
+        <p>Ward management · bed availability · real-time allotment tracking</p>
+        <p style="font-size: 0.8rem; margin-top: 12px; opacity: 0.7;"><i class="fas fa-procedures"></i> Optimize occupancy</p>
+      </a>
+
+      <!-- NEW: Pharmacist Medicine Distribution → redirect to pharma.html -->
+      <a href="pharma.html" class="card" data-role="pharma" aria-label="Pharmacist Medicine Distribution - pharmaceutical workflow">
+        <div class="card-icon">
+          <i class="fas fa-pills"></i>
+        </div>
+        <h3>Pharmacist Desk</h3>
+        <p>Medicine distribution · e-prescriptions · inventory & dispensing</p>
+        <p style="font-size: 0.8rem; margin-top: 12px; opacity: 0.7;"><i class="fas fa-capsules"></i> Smart dispensing</p>
+      </a>
+    </div>
+
+    <!-- subtle footer with professional details & redirect info -->
+    <div class="info-footer">
+      <span><i class="fas fa-shield-alt"></i> HIPAA & GDPR ready</span>
+      <span><i class="fas fa-robot"></i> Neural diagnostic core</span>
+      <span><i class="fas fa-charging-station"></i> 24/7 intelligent support</span>
+    </div>
+    <div style="text-align: center; margin-top: 1.2rem; font-size: 0.75rem; color: #6a8eaa;">
+      <i class="fas fa-laptop-medical"></i> Seamless integration · Role-based access
+    </div>
+  </div>
+
+  <!-- optional tiny script for smooth console info (no functional changes, just dev-friendly) -->
+  <script>
+    (function() {
+      // just to demonstrate that all widgets correctly redirect to the specified HTML pages.
+      // no override of default anchor behavior — fully respecting href attributes.
+      // Additional UX: Provide a subtle log for development purposes (non-intrusive)
+      const cards = document.querySelectorAll('.card');
+      cards.forEach(card => {
+        card.addEventListener('click', (e) => {
+          // let the native navigation happen; we just log for transparency in console
+          const href = card.getAttribute('href');
+          if (href) {
+            console.log(`🩺 IntelliCare: Redirecting to → ${href}`);
+          }
+        });
+      });
+      // hover effect already handled by CSS, but adds a small accessibility improvement
+      console.log('✅ Intelligent Healthcare System UI — ready | Widgets: Admin(login.html), Patient(patient.html), Doctor(doctor.html), Lab(lab.html), Bed Allotment(bed.html), Pharmacist(pharma.html)');
+    })();
+  </script>
+</body>
+</html>

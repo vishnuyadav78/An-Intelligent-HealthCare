@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Intelligent Healthcare | AI Diagnostic & Patient Management</title>
+    <!-- Tailwind CSS + Font Awesome + Firebase + jsPDF + autoTable -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        /* Centered Popup Modal */
+        .popup-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            visibility: hidden;
+            opacity: 0;
+            transition: visibility 0s, opacity 0.2s ease;
+        }
+        .popup-modal.active {
+            visibility: visible;
+            opacity: 1;
+        }
+        .popup-content {
+            background: white;
+            max-width: 400px;
+            width: 90%;
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 25px 40px -12px rgba(0,0,0,0.25);
+            transform: scale(0.95);
+            transition: transform 0.2s ease;
+        }
+        .popup-modal.active .popup-content {
+            transform: scale(1);
+        }
+        .popup-icon {
+            font-size: 3rem;
+            margin-bottom: 0.75rem;
+        }
+        .popup-message {
+            font-size: 1.125rem;
+            margin: 1rem 0;
+            color: #1f2937;
+        }
+        .popup-btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .popup-btn:hover {
+            background: #2563eb;
+        }
+        /* Other styles remain */
+        .card-hover {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -12px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-blue-50 font-sans antialiased">
+
+    <!-- LOGIN SECTION -->
+    <div id="loginSection" class="min-h-screen flex items-center justify-center p-4">
+        <div class="max-w-md w-full bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-white/30 card-hover">
+            <div class="text-center mb-6">
+                <div class="inline-flex p-3 bg-blue-600 rounded-full text-white shadow-lg mb-3">
+                    <i class="fas fa-brain text-3xl"></i>
+                </div>
+                <h1 class="text-3xl font-extrabold text-gray-800">Intelligent Healthcare</h1>
+                <p class="text-gray-500 text-sm mt-1">AI Diagnostic & Patient Management</p>
+                <p class="text-gray-400 text-xs mt-2">Pharmacist Portal</p>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                    <div class="relative">
+                        <i class="fas fa-user absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" id="loginUsername" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" placeholder="pharmacist">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <div class="relative">
+                        <i class="fas fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input type="password" id="loginPassword" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" placeholder="••••••">
+                    </div>
+                </div>
+                <button id="loginBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition shadow-md flex items-center justify-center gap-2"><i class="fas fa-sign-in-alt"></i> Login to Dashboard</button>
+            </div>
+           
+        </div>
+    </div>
+
+    <!-- MAIN APP (hidden until login) -->
+    <div id="appSection" class="hidden min-h-screen bg-gray-50">
+        <!-- header -->
+        <header class="bg-white shadow-md sticky top-0 z-20 border-b border-gray-100">
+            <div class="container mx-auto px-4 py-4 flex flex-wrap justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="bg-blue-600 p-2 rounded-xl text-white shadow"><i class="fas fa-robot text-xl"></i></div>
+                    <div>
+                        <h1 class="text-xl md:text-2xl font-bold text-gray-800">Intelligent Healthcare <span class="text-blue-600">PharmaSuite</span></h1>
+                        <p class="text-xs text-gray-500 hidden md:block">AI Diagnostic · Intelligent Dispensing</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium"><i class="fas fa-user-md mr-1"></i> Pharmacist</span>
+                    <button id="logoutBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-xl transition flex items-center gap-2"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="container mx-auto px-4 py-6 max-w-7xl">
+            <!-- Action Buttons -->
+            <div class="flex flex-wrap gap-4 justify-between items-center mb-8">
+                <div class="flex gap-3">
+                    <button id="openAddMedicineModalBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 px-5 rounded-xl shadow-md transition flex items-center gap-2"><i class="fas fa-plus-circle"></i> Add Medicine</button>
+                    <button id="openBuyModalBtn" class="bg-violet-600 hover:bg-violet-700 text-white font-semibold py-2.5 px-5 rounded-xl shadow-md transition flex items-center gap-2"><i class="fas fa-cart-shopping"></i> Buy Medicine</button>
+                </div>
+                
+            </div>
+
+            <!-- Medicines Inventory Table with Edit/Delete -->
+            <div class="bg-white rounded-2xl shadow-md overflow-hidden mb-10 border border-gray-100">
+                <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b">
+                    <h2 class="text-xl font-bold text-gray-700 flex items-center gap-2"><i class="fas fa-capsules text-blue-500"></i> Medicine Stock Inventory</h2>
+                </div>
+                <div class="overflow-x-auto p-1">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Medicine</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price (₹)</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mfg Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expiry Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock Qty</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="medicinesTbody" class="bg-white divide-y divide-gray-100">
+                            <tr><td colspan="6" class="text-center py-8 text-gray-400">Loading medicines...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Purchase History Table with Delete -->
+            <div class="bg-white rounded-2xl shadow-md overflow-hidden border border-gray-100">
+                <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b flex justify-between items-center flex-wrap gap-2">
+                    <h2 class="text-xl font-bold text-gray-700 flex items-center gap-2"><i class="fas fa-history text-purple-500"></i> Purchase History</h2>
+                    <span class="text-xs text-gray-400"><i class="fas fa-file-invoice"></i> Invoices stored in Firebase</span>
+                </div>
+                <div class="overflow-x-auto p-1">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Patient ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Patient Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Purchase Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total (₹)</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="purchasesTbody">
+                            <tr><td colspan="6" class="text-center py-8 text-gray-400">No purchase records yet</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL: ADD MEDICINE -->
+    <div id="addMedicineModal" class="fixed inset-0 flex items-center justify-center z-50 hidden">
+        <div class="modal-overlay absolute inset-0 bg-black/50" id="closeAddModalBg"></div>
+        <div class="bg-white w-full max-w-md mx-4 rounded-2xl shadow-2xl z-10 p-6 relative">
+            <button class="absolute top-4 right-4 text-gray-400 hover:text-gray-600" id="closeAddModalBtn"><i class="fas fa-times text-xl"></i></button>
+            <h3 class="text-2xl font-bold text-gray-800 mb-2"><i class="fas fa-pills text-emerald-500 mr-2"></i>Register New Medicine</h3>
+            <div class="space-y-4 mt-4">
+                <input type="text" id="medName" placeholder="Medicine name *" class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-400 outline-none">
+                <input type="number" id="medPrice" placeholder="Price (₹) *" step="0.01" class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-400 outline-none">
+                <input type="date" id="medMfgDate" class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-400 outline-none">
+                <input type="date" id="medExpDate" class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-400 outline-none">
+                <input type="number" id="medQuantity" placeholder="Stock quantity *" min="1" class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-400 outline-none">
+                <button id="confirmAddMedicineBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition">➕ Add to Inventory</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: EDIT MEDICINE -->
+    <div id="editMedicineModal" class="fixed inset-0 flex items-center justify-center z-50 hidden">
+        <div class="modal-overlay absolute inset-0 bg-black/50" id="closeEditModalBg"></div>
+        <div class="bg-white w-full max-w-md mx-4 rounded-2xl shadow-2xl z-10 p-6 relative">
+            <button class="absolute top-4 right-4 text-gray-400 hover:text-gray-600" id="closeEditModalBtn"><i class="fas fa-times"></i></button>
+            <h3 class="text-2xl font-bold text-gray-800 mb-2"><i class="fas fa-edit text-amber-500"></i> Edit Medicine</h3>
+            <input type="hidden" id="editMedId">
+            <div class="space-y-4 mt-4">
+                <input type="text" id="editMedName" placeholder="Medicine name" class="w-full border rounded-xl px-4 py-3">
+                <input type="number" id="editMedPrice" placeholder="Price" step="0.01" class="w-full border rounded-xl px-4 py-3">
+                <input type="date" id="editMedMfgDate" class="w-full border rounded-xl px-4 py-3">
+                <input type="date" id="editMedExpDate" class="w-full border rounded-xl px-4 py-3">
+                <input type="number" id="editMedQuantity" placeholder="Quantity" min="0" class="w-full border rounded-xl px-4 py-3">
+                <button id="confirmEditMedicineBtn" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded-xl">💾 Update Medicine</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: BUY MEDICINE (multi-selection) -->
+    <div id="buyMedicineModal" class="fixed inset-0 flex items-center justify-center z-50 hidden overflow-y-auto py-6">
+        <div class="modal-overlay absolute inset-0 bg-black/50" id="closeBuyModalBg"></div>
+        <div class="bg-white w-full max-w-4xl mx-4 rounded-2xl shadow-2xl z-10 my-8 relative max-h-[90vh] overflow-y-auto">
+            <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+                <h3 class="text-2xl font-bold text-gray-800"><i class="fas fa-shopping-cart text-violet-500 mr-2"></i>Create Prescription Invoice</h3>
+                <button id="closeBuyModalBtn" class="text-gray-400 hover:text-gray-700"><i class="fas fa-times text-2xl"></i></button>
+            </div>
+            <div class="p-6 space-y-5">
+                <div class="grid md:grid-cols-3 gap-4 bg-gray-50 p-4 rounded-xl">
+                    <div><label class="block text-sm font-medium">Patient Name *</label><input type="text" id="patientName" class="w-full border rounded-lg px-3 py-2 mt-1"></div>
+                    <div><label class="block text-sm font-medium">Patient ID *</label><input type="text" id="patientId" class="w-full border rounded-lg px-3 py-2 mt-1"></div>
+                    <div><label class="block text-sm font-medium">Issue Date</label><input type="date" id="purchaseDate" class="w-full border rounded-lg px-3 py-2 mt-1"></div>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-2">Select Medicines & Quantity</label>
+                    <div id="medicineChecklistContainer" class="border rounded-xl p-3 bg-white max-h-72 overflow-y-auto divide-y">
+                        <div class="text-center text-gray-400 py-4">Loading available medicines...</div>
+                    </div>
+                </div>
+                <div class="flex justify-end items-center gap-4 bg-gray-100 p-4 rounded-xl">
+                    <span class="text-lg font-medium">TOTAL AMOUNT:</span>
+                    <span id="dynamicTotalAmount" class="text-3xl font-extrabold text-violet-700">₹0.00</span>
+                </div>
+                <button id="confirmPurchaseBtn" class="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 rounded-xl transition shadow-lg flex items-center justify-center gap-2"><i class="fas fa-receipt"></i> Generate Invoice & Complete Purchase</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CENTERED POPUP MODAL (replaces toast) -->
+    <div id="popupModal" class="popup-modal">
+        <div class="popup-content">
+            <div class="popup-icon" id="popupIcon"></div>
+            <div class="popup-message" id="popupMessage"></div>
+            <button class="popup-btn" id="popupCloseBtn">OK</button>
+        </div>
+    </div>
+
+    <script>
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyDgZjOFKQosy64nOtOwZaWGD8gSe7eX5NY",
+            authDomain: "first-1fbe1.firebaseapp.com",
+            databaseURL: "https://first-1fbe1-default-rtdb.firebaseio.com",
+            projectId: "first-1fbe1",
+            storageBucket: "first-1fbe1.firebasestorage.app",
+            messagingSenderId: "392953345039",
+            appId: "1:392953345039:web:aa36154e3e3635a94a9f7a"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const medicinesRef = db.ref('medicineInventory');   // new node name
+        const purchasesRef = db.ref('purchaseHistory');     // new node name
+
+        let currentMedicines = [];
+
+        // Centered Popup function
+        function showPopup(message, type = 'info') {
+            const modal = document.getElementById('popupModal');
+            const iconElem = document.getElementById('popupIcon');
+            const msgElem = document.getElementById('popupMessage');
+            // Set icon based on type
+            let iconHtml = '';
+            if (type === 'success') iconHtml = '<i class="fas fa-check-circle text-green-500"></i>';
+            else if (type === 'error') iconHtml = '<i class="fas fa-exclamation-circle text-red-500"></i>';
+            else iconHtml = '<i class="fas fa-info-circle text-blue-500"></i>';
+            iconElem.innerHTML = iconHtml;
+            msgElem.innerText = message;
+            modal.classList.add('active');
+            // Auto close after 3 seconds, but also allow manual close
+            const timeout = setTimeout(() => {
+                modal.classList.remove('active');
+            }, 3000);
+            // If user clicks OK, clear timeout and close
+            const closeHandler = () => {
+                clearTimeout(timeout);
+                modal.classList.remove('active');
+                document.getElementById('popupCloseBtn').removeEventListener('click', closeHandler);
+            };
+            document.getElementById('popupCloseBtn').addEventListener('click', closeHandler, { once: true });
+        }
+
+        // Replace all showToast calls with showPopup
+        async function loadMedicines() {
+            try {
+                const snapshot = await medicinesRef.once('value');
+                const data = snapshot.val() || {};
+                currentMedicines = Object.entries(data).map(([id, med]) => ({ id, ...med }));
+                renderMedicinesTable();
+            } catch (err) { showPopup("Failed to load medicines", "error"); }
+        }
+
+        function renderMedicinesTable() {
+            const tbody = document.getElementById('medicinesTbody');
+            if (!currentMedicines.length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-400">No medicines in stock. Click "Add Medicine"</td></tr>';
+                return;
+            }
+            tbody.innerHTML = currentMedicines.map(med => `
+                <tr>
+                    <td class="px-6 py-3 font-medium">${escapeHtml(med.name)}</td>
+                    <td class="px-6 py-3">₹${parseFloat(med.price).toFixed(2)}</td>
+                    <td class="px-6 py-3 text-sm">${med.manufactureDate || ''}</td>
+                    <td class="px-6 py-3 text-sm">${med.expiryDate || ''}</td>
+                    <td class="px-6 py-3"><span class="px-2 py-1 rounded-full text-xs font-semibold ${med.quantity > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${med.quantity || 0}</span></td>
+                    <td class="px-6 py-3 whitespace-nowrap">
+                        <button onclick="editMedicine('${med.id}')" class="bg-amber-100 text-amber-700 px-3 py-1 rounded-lg text-sm mr-2 hover:bg-amber-200"><i class="fas fa-edit"></i> Edit</button>
+                        <button onclick="deleteMedicine('${med.id}')" class="bg-red-100 text-red-700 px-3 py-1 rounded-lg text-sm hover:bg-red-200"><i class="fas fa-trash-alt"></i> Del</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        window.editMedicine = (id) => {
+            const med = currentMedicines.find(m => m.id === id);
+            if (!med) return;
+            document.getElementById('editMedId').value = id;
+            document.getElementById('editMedName').value = med.name;
+            document.getElementById('editMedPrice').value = med.price;
+            document.getElementById('editMedMfgDate').value = med.manufactureDate || '';
+            document.getElementById('editMedExpDate').value = med.expiryDate || '';
+            document.getElementById('editMedQuantity').value = med.quantity;
+            document.getElementById('editMedicineModal').classList.remove('hidden');
+        };
+
+        window.deleteMedicine = async (id) => {
+            if (confirm("Delete this medicine permanently?")) {
+                try {
+                    await medicinesRef.child(id).remove();
+                    showPopup("Medicine deleted successfully", "success");
+                    loadMedicines();
+                } catch(e) { showPopup("Delete failed", "error"); }
+            }
+        };
+
+        document.getElementById('confirmEditMedicineBtn').addEventListener('click', async () => {
+            const id = document.getElementById('editMedId').value;
+            const name = document.getElementById('editMedName').value.trim();
+            const price = parseFloat(document.getElementById('editMedPrice').value);
+            const manufactureDate = document.getElementById('editMedMfgDate').value;
+            const expiryDate = document.getElementById('editMedExpDate').value;
+            const quantity = parseInt(document.getElementById('editMedQuantity').value);
+            if (!name || isNaN(price) || isNaN(quantity)) { showPopup("Invalid fields", "error"); return; }
+            try {
+                await medicinesRef.child(id).update({ name, price, manufactureDate, expiryDate, quantity });
+                showPopup("Medicine updated", "success");
+                document.getElementById('editMedicineModal').classList.add('hidden');
+                loadMedicines();
+            } catch(e) { showPopup("Update error", "error"); }
+        });
+
+        // Add medicine
+        document.getElementById('confirmAddMedicineBtn').addEventListener('click', async () => {
+            const name = document.getElementById('medName').value.trim();
+            const price = parseFloat(document.getElementById('medPrice').value);
+            const manufactureDate = document.getElementById('medMfgDate').value;
+            const expiryDate = document.getElementById('medExpDate').value;
+            const quantity = parseInt(document.getElementById('medQuantity').value);
+            if(!name || isNaN(price) || price<=0 || !manufactureDate || !expiryDate || isNaN(quantity) || quantity<0){
+                showPopup("Please fill all fields correctly", "error"); return;
+            }
+            try {
+                await medicinesRef.push({ name, price, manufactureDate, expiryDate, quantity });
+                showPopup(`✅ ${name} added to inventory`, "success");
+                document.getElementById('addMedicineModal').classList.add('hidden');
+                document.getElementById('medName').value = '';
+                document.getElementById('medPrice').value = '';
+                document.getElementById('medMfgDate').value = '';
+                document.getElementById('medExpDate').value = '';
+                document.getElementById('medQuantity').value = '';
+                await loadMedicines();
+            } catch(e) { showPopup("Firebase error", "error"); }
+        });
+
+        // Purchase history
+        async function loadPurchaseHistory() {
+            try {
+                const snapshot = await purchasesRef.orderByKey().once('value');
+                const purchases = snapshot.val() || {};
+                const purchasesList = Object.entries(purchases).map(([id, p]) => ({ id, ...p })).reverse();
+                renderPurchasesTable(purchasesList);
+            } catch(e) { console.error(e); }
+        }
+
+        function renderPurchasesTable(purchases) {
+            const tbody = document.getElementById('purchasesTbody');
+            if (!purchases.length) { tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-400">No purchase records</td></tr>'; return; }
+            tbody.innerHTML = purchases.map(p => {
+                const itemsSummary = p.items?.map(i => `${i.name} (x${i.quantity})`).join(', ') || '-';
+                return `
+                    <tr>
+                        <td class="px-6 py-3 font-mono text-sm">${escapeHtml(p.patientId)}</td>
+                        <td class="px-6 py-3 font-medium">${escapeHtml(p.patientName)}</td>
+                        <td class="px-6 py-3">${p.purchaseDate || ''}</td>
+                        <td class="px-6 py-3 text-sm max-w-xs truncate" title="${itemsSummary}">${itemsSummary.substring(0, 60)}</td>
+                        <td class="px-6 py-3 font-bold text-violet-700">₹${parseFloat(p.totalAmount).toFixed(2)}</td>
+                        <td class="px-6 py-3">
+                            <button onclick="downloadInvoiceAgain('${p.id}')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm mr-2"><i class="fas fa-download"></i> PDF</button>
+                            <button onclick="deletePurchase('${p.id}')" class="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1 rounded-lg text-sm"><i class="fas fa-trash"></i> Del</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        window.deletePurchase = async (id) => {
+            if (confirm("Delete this purchase record?")) {
+                try {
+                    await purchasesRef.child(id).remove();
+                    showPopup("Purchase record deleted", "success");
+                    loadPurchaseHistory();
+                } catch(e) { showPopup("Delete failed", "error"); }
+            }
+        };
+
+        window.downloadInvoiceAgain = async (purchaseId) => {
+            const snapshot = await purchasesRef.child(purchaseId).once('value');
+            const purchase = snapshot.val();
+            if(purchase) generateInvoicePDF(purchase);
+            else showPopup("Invoice data missing", "error");
+        };
+
+        function generateInvoicePDF(purchase) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    // Title
+    doc.setFontSize(18);
+    doc.text("INTELLIGENT HEALTHCARE", 14, 20);
+
+    doc.setFontSize(10);
+    doc.text("AI Diagnostic & Patient Management System", 14, 28);
+
+    // Invoice Details
+    doc.setFontSize(12);
+    const invoiceShortId = purchase.id ? purchase.id.substring(0, 8) : 'INV';
+    doc.text(`Invoice #: ${invoiceShortId}-${Date.now().toString().slice(-6)}`, 14, 38);
+    doc.text(`Patient: ${purchase.patientName} (ID: ${purchase.patientId})`, 14, 46);
+    doc.text(`Date: ${purchase.purchaseDate}`, 14, 54);
+
+    // Helper function to safely format numbers
+    const formatAmount = (value) => {
+        const num = parseFloat(value);
+        return isNaN(num) ? "Rs. 0.00" : `Rs. ${num.toFixed(2)}`;
+    };
+
+    // Table Data
+    const itemsForTable = purchase.items.map(item => [
+        item.name || "N/A",
+        item.quantity || 0,
+        formatAmount(item.unitPrice),
+        formatAmount(item.subtotal)
+    ]);
+
+    // Table
+    doc.autoTable({
+        startY: 62,
+        head: [['Medicine', 'Qty', 'Unit Price', 'Subtotal']],
+        body: itemsForTable,
+        foot: [['', '', 'TOTAL', formatAmount(purchase.totalAmount)]],
+        theme: 'striped',
+        headStyles: { fillColor: [79, 70, 229] },
+        styles: { fontSize: 10 }
+    });
+
+    // Footer Message
+    doc.setFontSize(10);
+    doc.text(
+        "Thank you for choosing Intelligent Healthcare. Stay Healthy!",
+        14,
+        doc.lastAutoTable.finalY + 10
+    );
+
+    // Save PDF
+    doc.save(`Invoice_${purchase.patientId}_${purchase.purchaseDate}.pdf`);
+
+    showPopup("Invoice PDF downloaded", "success");
+}
+        // Buy modal logic
+        function renderMedicineChecklist(medicines) {
+            const container = document.getElementById('medicineChecklistContainer');
+            if(!medicines.length) { container.innerHTML = '<div class="text-center text-gray-400 py-4">No medicines available. Please add medicines first.</div>'; return; }
+            container.innerHTML = medicines.map(med => `
+                <div class="flex flex-wrap items-center gap-4 py-3 border-b last:border-0" data-med-id="${med.id}">
+                    <input type="checkbox" class="medicineCheckbox w-5 h-5 text-violet-600 rounded" data-id="${med.id}" data-price="${med.price}" data-max="${med.quantity}">
+                    <span class="flex-1 font-medium">${escapeHtml(med.name)}</span>
+                    <span class="text-sm text-gray-600">₹${med.price} | Stock: ${med.quantity}</span>
+                    <input type="number" class="medQtyInput w-24 border rounded-lg px-2 py-1 text-center" data-id="${med.id}" min="1" max="${med.quantity}" value="1" disabled style="background:#f9fafb">
+                </div>
+            `).join('');
+            attachCheckboxEvents();
+        }
+
+        function attachCheckboxEvents() {
+            document.querySelectorAll('.medicineCheckbox').forEach(cb => {
+                cb.addEventListener('change', (e) => {
+                    const qtyInput = document.querySelector(`.medQtyInput[data-id="${cb.dataset.id}"]`);
+                    if(qtyInput) qtyInput.disabled = !cb.checked;
+                    if(!cb.checked) qtyInput.value = 1;
+                    updateDynamicTotal();
+                });
+            });
+            document.querySelectorAll('.medQtyInput').forEach(inp => {
+                inp.addEventListener('input', () => updateDynamicTotal());
+            });
+            updateDynamicTotal();
+        }
+
+        function updateDynamicTotal() {
+            let total = 0;
+            document.querySelectorAll('.medicineCheckbox:checked').forEach(cb => {
+                const price = parseFloat(cb.dataset.price);
+                const qtyInput = document.querySelector(`.medQtyInput[data-id="${cb.dataset.id}"]`);
+                let qty = qtyInput ? parseInt(qtyInput.value) : 1;
+                if(isNaN(qty) || qty < 1) qty = 1;
+                const maxStock = parseInt(cb.dataset.max);
+                if(qty > maxStock) qty = maxStock;
+                total += price * qty;
+            });
+            document.getElementById('dynamicTotalAmount').innerHTML = `₹${total.toFixed(2)}`;
+        }
+
+        document.getElementById('openBuyModalBtn').addEventListener('click', async () => {
+            await loadMedicines();
+            const availableMeds = currentMedicines.filter(m => m.quantity > 0);
+            renderMedicineChecklist(availableMeds);
+            document.getElementById('patientName').value = '';
+            document.getElementById('patientId').value = '';
+            document.getElementById('purchaseDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('buyMedicineModal').classList.remove('hidden');
+        });
+
+        document.getElementById('confirmPurchaseBtn').addEventListener('click', async () => {
+            const patientName = document.getElementById('patientName').value.trim();
+            const patientId = document.getElementById('patientId').value.trim();
+            const purchaseDate = document.getElementById('purchaseDate').value;
+            if(!patientName || !patientId || !purchaseDate) { showPopup("Patient details required", "error"); return; }
+            const selectedItems = [];
+            const checkboxes = document.querySelectorAll('.medicineCheckbox:checked');
+            if(checkboxes.length === 0) { showPopup("Select at least one medicine", "error"); return; }
+            for(let cb of checkboxes) {
+                const medId = cb.dataset.id;
+                const med = currentMedicines.find(m => m.id === medId);
+                if(!med) continue;
+                const qtyInput = document.querySelector(`.medQtyInput[data-id="${medId}"]`);
+                let quantity = parseInt(qtyInput.value);
+                if(isNaN(quantity) || quantity < 1) quantity = 1;
+                if(quantity > med.quantity) { showPopup(`Insufficient stock for ${med.name}. Available: ${med.quantity}`, "error"); return; }
+                selectedItems.push({ medId, name: med.name, unitPrice: med.price, quantity, subtotal: med.price * quantity });
+            }
+            const totalAmount = selectedItems.reduce((sum, i) => sum + i.subtotal, 0);
+            try {
+                const updates = {};
+                for(let item of selectedItems) {
+                    const med = currentMedicines.find(m => m.id === item.medId);
+                    const newQty = med.quantity - item.quantity;
+                    updates[`medicineInventory/${item.medId}/quantity`] = newQty;
+                }
+                await db.ref().update(updates);
+                const purchaseRecord = {
+                    patientName, patientId, purchaseDate, totalAmount,
+                    items: selectedItems.map(i => ({ name: i.name, quantity: i.quantity, unitPrice: i.unitPrice, subtotal: i.subtotal })),
+                    timestamp: Date.now()
+                };
+                const newPurchaseRef = await purchasesRef.push(purchaseRecord);
+                purchaseRecord.id = newPurchaseRef.key;
+                generateInvoicePDF(purchaseRecord);
+                showPopup(`Purchase successful! Invoice generated.`, "success");
+                document.getElementById('buyMedicineModal').classList.add('hidden');
+                await loadMedicines();
+                await loadPurchaseHistory();
+            } catch(err) { showPopup("Transaction failed: " + err.message, "error"); }
+        });
+
+        // Modal controls
+        function closeModals() {
+            document.getElementById('addMedicineModal')?.classList.add('hidden');
+            document.getElementById('editMedicineModal')?.classList.add('hidden');
+            document.getElementById('buyMedicineModal')?.classList.add('hidden');
+        }
+        document.getElementById('openAddMedicineModalBtn').onclick = () => document.getElementById('addMedicineModal').classList.remove('hidden');
+        document.getElementById('closeAddModalBtn').onclick = closeModals;
+        document.getElementById('closeAddModalBg').onclick = closeModals;
+        document.getElementById('closeEditModalBtn').onclick = closeModals;
+        document.getElementById('closeEditModalBg').onclick = closeModals;
+        document.getElementById('closeBuyModalBtn').onclick = closeModals;
+        document.getElementById('closeBuyModalBg').onclick = closeModals;
+
+        // Login
+        document.getElementById('loginBtn').addEventListener('click', () => {
+            const user = document.getElementById('loginUsername').value;
+            const pass = document.getElementById('loginPassword').value;
+            if(user === 'pharmacist' && pass === '123') {
+                document.getElementById('loginSection').classList.add('hidden');
+                document.getElementById('appSection').classList.remove('hidden');
+                loadMedicines();
+                loadPurchaseHistory();
+                showPopup("Welcome, Pharmacist!", "success");
+            } else {
+                showPopup("Invalid credentials. Use pharmacist / 123", "error");
+            }
+        });
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            document.getElementById('appSection').classList.add('hidden');
+            document.getElementById('loginSection').classList.remove('hidden');
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+            showPopup("Logged out successfully", "success");
+        });
+
+        function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+    </script>
+</body>
+</html>

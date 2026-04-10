@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Fall Detection with Alarm</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f8f9fc;
+      --surface: #ffffff;
+      --surface2: #f1f4f9;
+      --border: #e2e8f2;
+      --text: #0f172a;
+      --muted: #64748b;
+      --accent: #2563eb;
+      --accent-light: #eff4ff;
+      --danger: #ef4444;
+      --danger-light: #fef2f2;
+      --success: #16a34a;
+      --success-light: #f0fdf4;
+      --warning: #f59e0b;
+      --radius: 14px;
+      --shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.07);
+      --shadow-sm: 0 1px 2px rgba(0,0,0,.05);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-icon {
+      width: 38px; height: 38px;
+      background: var(--accent);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .header-title { font-family: 'Sora', sans-serif; font-size: 18px; font-weight: 700; }
+    .header-sub   { font-size: 12px; color: var(--muted); margin-top: 1px; }
+
+    .status-pill {
+      margin-left: auto;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: .02em;
+      background: var(--surface2);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      transition: background .3s, color .3s;
+    }
+    .status-pill.normal  { background: var(--success-light); color: var(--success); border-color: #bbf7d0; }
+    .status-pill.danger  { background: var(--danger-light);  color: var(--danger);  border-color: #fecaca;
+                           animation: pulse 1s infinite; }
+
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,.3); }
+      50%      { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+    }
+
+    /* ── Layout ── */
+    .wrapper {
+      max-width: 1140px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 20px;
+    }
+
+    @media (max-width: 860px) {
+      .wrapper { grid-template-columns: 1fr; }
+    }
+
+    .col-left  { display: flex; flex-direction: column; gap: 16px; }
+    .col-right { display: flex; flex-direction: column; gap: 16px; }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-header-icon {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      background: var(--accent-light);
+      color: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+
+    .card-title { font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 600; }
+    .card-body  { padding: 16px 20px; }
+
+    /* ── Video ── */
+    .video-wrap {
+      position: relative;
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: #0f172a;
+      aspect-ratio: 16/10;
+    }
+
+    #video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .video-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: rgba(15,23,42,.65);
+      backdrop-filter: blur(2px);
+    }
+
+    .video-overlay p { color: rgba(255,255,255,.6); font-size: 13px; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+      border-radius: 9px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: opacity .15s, transform .1s;
+    }
+    .btn:active { transform: scale(.97); }
+
+    .btn-primary   { background: var(--accent); color: #fff; }
+    .btn-primary:hover { opacity: .9; }
+
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: var(--border); }
+
+    .btn-sm { padding: 7px 14px; font-size: 13px; }
+
+    .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* Mode toggle special active style */
+    .mode-btn.active {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    /* ── File upload ── */
+    .file-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+      border-radius: 9px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px dashed var(--border);
+      transition: background .15s;
+    }
+    .file-label:hover { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+    #videoUpload { display: none; }
+
+    /* ── Metric row ── */
+    .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    .metric-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+
+    .metric-label  { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+    .metric-value  { font-family: 'Sora', sans-serif; font-size: 22px; font-weight: 600; }
+    .metric-badge  {
+      display: inline-block;
+      margin-top: 4px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-ok   { background: var(--success-light); color: var(--success); }
+    .badge-fail { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+    .badge-warn { background: var(--danger-light); color: var(--danger); }
+
+    /* ── Threshold row ── */
+    .threshold-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .threshold-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .threshold-key   { font-size: 13px; color: var(--muted); }
+    .threshold-value { font-size: 13px; font-weight: 600; background: var(--accent-light); color: var(--accent);
+                       padding: 2px 10px; border-radius: 999px; }
+
+    /* ── Calibration inputs ── */
+    .cal-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .cal-row label { font-size: 13px; color: var(--muted); }
+
+    .input-field {
+      width: 90px;
+      padding: 7px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      background: var(--surface);
+      transition: border-color .2s;
+    }
+    .input-field:focus { outline: none; border-color: var(--accent); }
+
+    .input-full {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      background: var(--surface);
+      transition: border-color .2s;
+    }
+    .input-full:focus { outline: none; border-color: var(--accent); }
+
+    /* ── Location search ── */
+    .search-results {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-top: 6px;
+      max-height: 160px;
+      overflow-y: auto;
+      box-shadow: var(--shadow);
+    }
+    .search-result-item {
+      padding: 9px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: background .12s;
+    }
+    .search-result-item:last-child { border-bottom: none; }
+    .search-result-item:hover { background: var(--accent-light); color: var(--accent); }
+
+    .location-tag {
+      margin-top: 8px;
+      padding: 8px 12px;
+      background: var(--surface2);
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      word-break: break-all;
+    }
+
+    /* ── Divider ── */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+
+    /* ── Section label ── */
+    .section-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--muted);
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    /* ── Table ── */
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    thead th {
+      text-align: left;
+      padding: 10px 14px;
+      background: var(--surface2);
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+    }
+
+    tbody td {
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      vertical-align: middle;
+    }
+
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: var(--surface2); }
+
+    .type-badge {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .empty-state {
+      padding: 32px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .full-col { grid-column: 1 / -1; }
+
+    /* ── Alert banner ── */
+    .alert-banner {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      background: var(--danger-light);
+      border: 1px solid #fca5a5;
+      border-radius: 10px;
+      color: var(--danger);
+      font-size: 14px;
+      font-weight: 500;
+      animation: slideIn .3s ease;
+    }
+    .alert-banner.show { display: flex; }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 480px) {
+      .metric-grid { grid-template-columns: 1fr 1fr; }
+      .header-sub  { display: none; }
+    }
+
+    /* toggle area styling */
+    .toggle-panel {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+    .mode-buttons {
+      display: flex;
+      gap: 8px;
+    }
+    .upload-action-btn {
+      display: inline-flex;
+      gap: 6px;
+      background: var(--surface2);
+      padding: 8px 14px;
+      border-radius: 40px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid var(--border);
+    }
+    .upload-action-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  </style>
+</head>
+
+<body>
+
+<!-- ── Header ── -->
+<header class="header">
+  <div class="header-icon">🏥</div>
+  <div>
+    <div class="header-title">Fall Detection</div>
+    <div class="header-sub">AI-powered monitoring system</div>
+  </div>
+  <div class="status-pill" id="statusPill">● Waiting</div>
+</header>
+
+<!-- ── Main wrapper ── -->
+<div class="wrapper">
+
+  <!-- ═══ LEFT COLUMN ═══ -->
+  <div class="col-left">
+
+    <!-- Video Card -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-icon">📷</div>
+        <span class="card-title">Live Feed</span>
+      </div>
+      <div class="card-body" style="padding:16px;">
+        <div class="video-wrap">
+          <video id="video" autoplay muted playsinline></video>
+          <div class="video-overlay" id="videoOverlay">
+            <div style="font-size:36px">📷</div>
+            <p>Start camera or upload a video to begin</p>
+            <div class="btn-group">
+              <button class="btn btn-primary" onclick="startCamera(); document.getElementById('videoOverlay').style.display='none'">
+                📡 Start Camera
+              </button>
+              <label class="file-label" for="videoUpload">📁 Upload Video</label>
+              <input type="file" id="videoUpload" accept="video/*">
+            </div>
+          </div>
+        </div>
+
+        <!-- TOGGLE SECTION: camera / upload mode switch without refresh -->
+        <div class="toggle-panel">
+          <div class="mode-buttons">
+            <button id="cameraModeBtn" class="btn btn-secondary mode-btn">📷 Camera Mode</button>
+            <button id="uploadModeBtn" class="btn btn-secondary mode-btn">🎥 Upload Mode</button>
+          </div>
+          <div id="uploadSelectTrigger" style="display: flex;">
+            <div id="selectVideoBtn" class="upload-action-btn">📂 Select Video File</div>
+          </div>
+        </div>
+        <p style="font-size: 11px; color: var(--muted); margin-top: 8px; text-align: center;">
+          ⚡ Toggle between camera & upload seamlessly. In upload mode, pick a video file.
+        </p>
+
+        <!-- Alert banner -->
+        <div class="alert-banner" id="alertBanner" style="margin-top:12px;">
+          🚨 Fall Detected! Emergency contacts have been notified.
+        </div>
+      </div>
+    </div>
+
+    <!-- Metrics Card -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-icon">📊</div>
+        <span class="card-title">Detection Metrics</span>
+      </div>
+      <div class="card-body">
+        <div class="metric-grid">
+          <div class="metric-box">
+            <div class="metric-label">Drop Value</div>
+            <div class="metric-value" id="dropVal">0.000</div>
+            <span class="metric-badge badge-fail" id="dropCheck">Below Threshold</span>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Speed Value</div>
+            <div class="metric-value" id="speedVal">0.000</div>
+            <span class="metric-badge badge-fail" id="speedCheck">Below Threshold</span>
+          </div>
+        </div>
+
+        <hr class="divider" style="margin-top:14px;">
+        <div class="section-label">Thresholds</div>
+
+        <div class="threshold-row">
+          <span class="threshold-key">Drop Threshold</span>
+          <span class="threshold-value" id="dropThresholdDisplay">5</span>
+        </div>
+        <div class="threshold-row">
+          <span class="threshold-key">Speed Threshold</span>
+          <span class="threshold-value" id="speedThresholdDisplay">5</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- History Card (full width) -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-icon">📋</div>
+        <span class="card-title">Fall History</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>S.NO</th>
+              <th>Date & Time</th>
+              <th>Type</th>
+              <th>Location</th>
+              <th>Mail</th>
+            </tr>
+          </thead>
+          <tbody id="historyTable">
+            <tr>
+              <td colspan="5">
+                <div class="empty-state">No fall events recorded yet</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- end col-left -->
+
+  <!-- ═══ RIGHT COLUMN ═══ -->
+  <div class="col-right">
+
+    <!-- Location Card -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-icon">📍</div>
+        <span class="card-title">Location</span>
+      </div>
+      <div class="card-body" style="display:flex; flex-direction:column; gap:10px;">
+        <button class="btn btn-secondary btn-sm" onclick="setSelectedLocation()">
+          🎯 Use Current Location
+        </button>
+        <input type="text" id="locationSearch" class="input-full"
+               placeholder="🔍 Search a location…"
+               oninput="searchLocation()">
+        <div id="searchResults" class="search-results" style="display:none;"></div>
+        <div class="location-tag" id="selectedLocationText">Not Selected</div>
+      </div>
+    </div>
+
+    <!-- Email Card -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-icon">📧</div>
+        <span class="card-title">Notification Email</span>
+      </div>
+      <div class="card-body">
+        <input type="email" id="userEmail" class="input-full"
+               placeholder="Enter email address…">
+        <p style="font-size:12px; color:var(--muted); margin-top:8px;">
+          Alert emails will be sent to this address when a fall is detected.
+        </p>
+      </div>
+    </div>
+
+    <!-- Calibration Card -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-icon">⚙️</div>
+        <span class="card-title">Calibration</span>
+      </div>
+      <div class="card-body">
+        <div class="cal-row">
+          <label>Drop Threshold</label>
+          <input type="number" id="calDrop" value="5" class="input-field">
+        </div>
+        <div class="cal-row" style="margin-bottom:14px;">
+          <label>Speed Threshold</label>
+          <input type="number" id="calSpeed" value="5" class="input-field">
+        </div>
+        <button class="btn btn-primary" style="width:100%;" onclick="applyCalibration()">
+          ✅ Apply Calibration
+        </button>
+      </div>
+    </div>
+
+  </div><!-- end col-right -->
+
+</div><!-- end wrapper -->
+
+<!-- Hidden form & audio -->
+<audio id="alarmAudio" src="alarm.mp3"></audio>
+
+<form id="mailForm" action="https://formsubmit.co/vy102963@gmail.com" method="POST" target="hidden_iframe">
+  <input type="hidden" name="message" id="mailMessage">
+  <input type="hidden" name="_next" value="about:blank">
+  <input type="hidden" name="_captcha" value="false">
+</form>
+<iframe name="hidden_iframe" style="display:none;"></iframe>
+
+<script>
+const video          = document.getElementById("video");
+const canvas         = document.createElement("canvas");
+const ctx            = canvas.getContext("2d");
+const dropVal        = document.getElementById("dropVal");
+const speedVal       = document.getElementById("speedVal");
+const dropCheck      = document.getElementById("dropCheck");
+const speedCheck     = document.getElementById("speedCheck");
+const alarmAudio     = document.getElementById("alarmAudio");
+const videoUpload    = document.getElementById("videoUpload");
+const dropThresholdDisplay  = document.getElementById("dropThresholdDisplay");
+const speedThresholdDisplay = document.getElementById("speedThresholdDisplay");
+const calDrop        = document.getElementById("calDrop");
+const calSpeed       = document.getElementById("calSpeed");
+const statusPill     = document.getElementById("statusPill");
+const alertBanner    = document.getElementById("alertBanner");
+const cameraModeBtn  = document.getElementById("cameraModeBtn");
+const uploadModeBtn  = document.getElementById("uploadModeBtn");
+const selectVideoBtn = document.getElementById("selectVideoBtn");
+
+let headHistory      = [];
+let alarmPlaying     = false;
+let DROP_T           = 5;
+let SPEED_T          = 5;
+let lastFallTime     = 0;
+let selectedLocation = "Not Selected";
+let selectedLat      = "";
+let selectedLng      = "";
+
+// Mode management variables
+let cameraInstance   = null;       // MediaPipe Camera instance
+let uploadAnimationId = null;      // requestAnimationFrame ID for uploaded video
+let currentFileURL    = null;      // blob url for cleanup
+let currentMode       = null;      // 'camera' or 'upload'
+
+// Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyB9WJsmWD1UAK7G5udSTHnlNULfUc5hWHA",
+  authDomain: "ai-agents-interview.firebaseapp.com",
+  databaseURL: "https://ai-agents-interview-default-rtdb.firebaseio.com"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// Pose
+const pose = new Pose({
+  locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
+});
+pose.setOptions({
+  modelComplexity: 1,
+  smoothLandmarks: true,
+  minDetectionConfidence: 0.5,
+  minTrackingConfidence: 0.5
+});
+pose.onResults(onResults);
+
+// ---------- Helper: stop camera completely ----------
+function stopCameraAndCleanup() {
+  if (cameraInstance) {
+    if (typeof cameraInstance.stop === 'function') cameraInstance.stop();
+    cameraInstance = null;
+  }
+  if (video.srcObject) {
+    const tracks = video.srcObject.getTracks();
+    tracks.forEach(track => track.stop());
+    video.srcObject = null;
+  }
+}
+
+// ---------- Helper: stop upload processing and clean URL ----------
+function stopUploadAndCleanup() {
+  if (uploadAnimationId) {
+    cancelAnimationFrame(uploadAnimationId);
+    uploadAnimationId = null;
+  }
+  if (currentFileURL) {
+    URL.revokeObjectURL(currentFileURL);
+    currentFileURL = null;
+  }
+  // Reset video element completely
+  video.pause();
+  video.src = "";
+  video.load();
+  // Ensure no leftover srcObject
+  if (video.srcObject) {
+    const tracks = video.srcObject.getTracks();
+    tracks.forEach(track => track.stop());
+    video.srcObject = null;
+  }
+}
+
+// Reset detection buffer to avoid stale triggers
+function resetDetectionBuffer() {
+  headHistory = [];
+}
+
+// ---------- Camera mode ----------
+function startCamera() {
+  // Stop any existing upload and camera resources
+  stopUploadAndCleanup();
+  stopCameraAndCleanup();
+  resetDetectionBuffer();
+  
+  const overlay = document.getElementById("videoOverlay");
+  if (overlay) overlay.style.display = "none";
+  
+  // Create fresh camera instance
+  cameraInstance = new Camera(video, {
+    onFrame: async () => {
+      if (video.videoWidth > 0 && video.videoHeight > 0) {
+        await pose.send({ image: video });
+      }
+    },
+    width: 720,
+    height: 480
+  });
+  cameraInstance.start();
+  currentMode = 'camera';
+  updateModeButtonActive('camera');
+}
+
+// ---------- Upload mode: process video file ----------
+function initiateUploadModeFromFile(file) {
+  if (!file) return;
+  // Clean all previous resources
+  stopCameraAndCleanup();
+  stopUploadAndCleanup();
+  resetDetectionBuffer();
+  
+  const overlay = document.getElementById("videoOverlay");
+  if (overlay) overlay.style.display = "none";
+  
+  const url = URL.createObjectURL(file);
+  currentFileURL = url;
+  video.src = url;
+  
+  // Wait for video to be ready before starting processing loop
+  const startProcessing = () => {
+    if (uploadAnimationId) cancelAnimationFrame(uploadAnimationId);
+    const processVideoFrame = async () => {
+      if (video.paused || video.ended) {
+        if (video.ended) {
+          if (uploadAnimationId) cancelAnimationFrame(uploadAnimationId);
+          uploadAnimationId = null;
+          return;
+        }
+        uploadAnimationId = requestAnimationFrame(processVideoFrame);
+        return;
+      }
+      if (video.videoWidth > 0 && video.videoHeight > 0) {
+        await pose.send({ image: video });
+      }
+      uploadAnimationId = requestAnimationFrame(processVideoFrame);
+    };
+    uploadAnimationId = requestAnimationFrame(processVideoFrame);
+  };
+  
+  // Start playback and wait for canplay event to ensure dimensions are available
+  video.oncanplay = () => {
+    video.play().catch(e => console.warn("Play failed:", e));
+    startProcessing();
+    video.oncanplay = null;
+  };
+  video.load(); // ensure loading starts
+  video.play().catch(e => console.warn("Initial play:", e));
+  
+  currentMode = 'upload';
+  updateModeButtonActive('upload');
+}
+
+// ---------- Toggle functions ----------
+function switchToCamera() {
+  if (currentMode === 'camera') return;
+  startCamera();
+}
+
+function switchToUpload() {
+  if (currentMode === 'upload') return;
+  // Clean everything, ready for file selection
+  stopCameraAndCleanup();
+  stopUploadAndCleanup();
+  resetDetectionBuffer();
+  currentMode = 'upload';
+  updateModeButtonActive('upload');
+  // Clear video source and show blank (overlay already hidden)
+  video.src = "";
+  video.load();
+}
+
+// UI active state for mode buttons
+function updateModeButtonActive(mode) {
+  if (mode === 'camera') {
+    cameraModeBtn.classList.add('active');
+    uploadModeBtn.classList.remove('active');
+  } else if (mode === 'upload') {
+    uploadModeBtn.classList.add('active');
+    cameraModeBtn.classList.remove('active');
+  } else {
+    cameraModeBtn.classList.remove('active');
+    uploadModeBtn.classList.remove('active');
+  }
+}
+
+// Attach button events
+cameraModeBtn.addEventListener('click', switchToCamera);
+uploadModeBtn.addEventListener('click', switchToUpload);
+selectVideoBtn.addEventListener('click', () => {
+  if (currentMode !== 'upload') {
+    // Auto-switch to upload mode first, then open file picker
+    switchToUpload();
+    setTimeout(() => videoUpload.click(), 50);
+  } else {
+    videoUpload.click();
+  }
+});
+
+// File input handler (overlay and manual)
+videoUpload.addEventListener("change", function(e) {
+  if (e.target.files && e.target.files[0]) {
+    initiateUploadModeFromFile(e.target.files[0]);
+    // Clear input value to allow re-selecting same file next time
+    videoUpload.value = '';
+  }
+});
+
+// Override global startCamera for overlay button
+const originalStartCamera = startCamera;
+window.startCamera = function() {
+  // Ensure we are switching to camera mode properly
+  if (currentMode === 'camera') return;
+  originalStartCamera();
+  updateModeButtonActive('camera');
+};
+
+// Calibration
+function applyCalibration() {
+  DROP_T  = parseFloat(calDrop.value);
+  SPEED_T = parseFloat(calSpeed.value);
+  dropThresholdDisplay.innerText  = DROP_T;
+  speedThresholdDisplay.innerText = SPEED_T;
+}
+
+// Results unchanged
+function onResults(results) {
+  if (video.videoWidth === 0) return;
+  canvas.width  = video.videoWidth;
+  canvas.height = video.videoHeight;
+  ctx.drawImage(results.image, 0, 0);
+  if (results.poseLandmarks) detectFall(results.poseLandmarks);
+}
+
+// Current location unchanged
+function setSelectedLocation() {
+  navigator.geolocation.getCurrentPosition(pos => {
+    selectedLat = pos.coords.latitude;
+    selectedLng = pos.coords.longitude;
+    selectedLocation = `https://maps.google.com/?q=${selectedLat},${selectedLng}`;
+    document.getElementById("selectedLocationText").innerText = selectedLocation;
+  });
+}
+
+let searchTimeout;
+function searchLocation() {
+  clearTimeout(searchTimeout);
+  const query      = document.getElementById("locationSearch").value;
+  const resultsBox = document.getElementById("searchResults");
+  if (query.length < 3) { resultsBox.style.display = "none"; resultsBox.innerHTML = ""; return; }
+  searchTimeout = setTimeout(() => {
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}`)
+      .then(res => res.json())
+      .then(data => {
+        resultsBox.innerHTML = "";
+        if (!data.length) { resultsBox.style.display = "none"; return; }
+        resultsBox.style.display = "block";
+        data.slice(0, 5).forEach(place => {
+          const div = document.createElement("div");
+          div.className = "search-result-item";
+          div.innerText = place.display_name;
+          div.onclick = () => {
+            selectedLat = place.lat;
+            selectedLng = place.lon;
+            selectedLocation = `https://maps.google.com/?q=${selectedLat},${selectedLng}`;
+            document.getElementById("selectedLocationText").innerText = place.display_name;
+            document.getElementById("locationSearch").value = place.display_name;
+            resultsBox.style.display = "none";
+            resultsBox.innerHTML = "";
+          };
+          resultsBox.appendChild(div);
+        });
+      });
+  }, 400);
+}
+
+function handleFallEvent() {
+  const now = Date.now();
+  if (now - lastFallTime < 5000) return;
+  lastFallTime = now;
+
+  const time  = new Date().toLocaleString();
+  const type  = currentMode === 'camera' ? "Camera" : "Upload";
+  const email = document.getElementById("userEmail").value || "vy102963@gmail.com";
+  document.getElementById("mailForm").action = `https://formsubmit.co/${email}`;
+
+  const msg = `🚨 FALL DETECTED!\nTime: ${time}\nType: ${type}\nLocation: ${selectedLocation}`;
+  document.getElementById("mailMessage").value = msg;
+  document.getElementById("mailForm").submit();
+
+  db.ref("fallHistory").push({ time, type, location: selectedLocation, mail: "Sent to " + email });
+}
+
+function loadHistory() {
+  db.ref("fallHistory").on("value", snap => {
+    const table = document.getElementById("historyTable");
+    table.innerHTML = "";
+    let i = 1;
+    snap.forEach(c => {
+      const d = c.val();
+      table.innerHTML += `
+        <tr>
+          <td>${i++}</td>
+          <td>${d.time}</td>
+          <td><span class="type-badge">${d.type}</span></td>
+          <td style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; color:var(--muted);">${d.location}</td>
+          <td style="font-size:12px;">${d.mail}</td>
+        </tr>`;
+    });
+    if (!snap.numChildren()) {
+      table.innerHTML = `<tr><td colspan="5"><div class="empty-state">No fall events recorded yet</div></td></tr>`;
+    }
+  });
+}
+loadHistory();
+
+function detectFall(landmarks) {
+  const headY = landmarks[0].y;
+  headHistory.push(headY);
+  if (headHistory.length > 8) headHistory.shift();
+  if (headHistory.length < 8) return;
+
+  const drop = headHistory[7] - headHistory[0];
+  let speed  = 0;
+  for (let i = 1; i < headHistory.length; i++) speed += (headHistory[i] - headHistory[i-1]);
+  speed /= 7;
+
+  dropVal.innerText  = drop.toFixed(3);
+  speedVal.innerText = speed.toFixed(3);
+
+  const dropOk  = drop > DROP_T;
+  const speedOk = speed > SPEED_T;
+
+  dropCheck.className  = `metric-badge ${dropOk  ? 'badge-ok' : 'badge-fail'}`;
+  dropCheck.innerText  = dropOk  ? "Above Threshold" : "Below Threshold";
+  speedCheck.className = `metric-badge ${speedOk ? 'badge-ok' : 'badge-fail'}`;
+  speedCheck.innerText = speedOk ? "Above Threshold" : "Below Threshold";
+
+  if (dropOk && speedOk) {
+    statusPill.className  = "status-pill danger";
+    statusPill.innerText  = "🚨 Fall Detected";
+    alertBanner.classList.add("show");
+    handleFallEvent();
+    if (!alarmPlaying) {
+      alarmPlaying = true;
+      alarmAudio.currentTime = 0;
+      alarmAudio.play();
+      setTimeout(() => { alarmAudio.pause(); alarmPlaying = false; }, 5000);
+    }
+  } else {
+    statusPill.className = "status-pill normal";
+    statusPill.innerText = "● Normal";
+    alertBanner.classList.remove("show");
+  }
+}
+
+// Initialize: no active mode, overlay visible
+updateModeButtonActive(null);
+</script>
+
+</body>
+</html>
